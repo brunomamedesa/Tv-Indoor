@@ -20,9 +20,9 @@ class Noticias extends StatelessWidget {
           children: [
             Text(
               'Carregando Notícias${controller.loadingDots}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 23,
-                color: Colors.grey.shade800,
+                color: Colors.white,
                 fontWeight: FontWeight.bold
               ),
             ),
@@ -43,7 +43,15 @@ class Noticias extends StatelessWidget {
                     final newsItem = controller.news[index];
         
                     return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+
+                        const Icon(
+                          Icons.new_releases_outlined,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 5),
                         Text(
                           newsItem['texto'] ?? '',
                           style: const TextStyle(
@@ -52,12 +60,8 @@ class Noticias extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        const Icon(
-                          Icons.new_releases_outlined,
-                          color: Colors.white,
-                          size: 25,
-                        ),
+                        const SizedBox(width: 20),
+
                       ],
                     );
         

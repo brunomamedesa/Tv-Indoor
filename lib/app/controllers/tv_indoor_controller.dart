@@ -25,7 +25,8 @@ class TvIndoorController extends GetxController {
   }
 
   void animateDots(){
-    Timer.periodic(const Duration(milliseconds: 700), (timer) {
+
+    Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (news.isNotEmpty) {
         timer.cancel();
 
@@ -46,14 +47,11 @@ class TvIndoorController extends GetxController {
     try {
       
       final response = await dio.get(newsUrl);
-      print(response.data);
-      final List<dynamic> jsonNews = response.data;
-      news.value = jsonNews.map((json) => json as Map<String, dynamic>).toList();
-
-
+      final List<dynamic> listNews = response.data;
+      news.value = List<Map<String, dynamic>>.from(listNews);
+      _startAutoScroll();
 
     } on DioException catch (e) {
-      print(e.response);
       news.value = [];
       return;
     }
@@ -61,7 +59,7 @@ class TvIndoorController extends GetxController {
 
     void _startAutoScroll() {
 
-      _scrollTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+      _scrollTimer = Timer.periodic(Duration(milliseconds: 20), (timer) {
 
         if (scrollController.hasClients) {
 

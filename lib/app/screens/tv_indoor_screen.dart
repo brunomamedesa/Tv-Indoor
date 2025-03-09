@@ -13,7 +13,16 @@ class TvIndoorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return 
       Scaffold(
-        body: const Text('teste'),
+        backgroundColor: Colors.white,
+        body: Center(
+          child: const Text(
+            'teste',
+            style: TextStyle(
+              fontSize: 30, 
+              color: Colors.black
+            ),
+          ),
+        ),
         bottomNavigationBar: BottomAppBar(
           color: Theme.of(context).colorScheme.primary,
           child: Noticias(controller: controller)
