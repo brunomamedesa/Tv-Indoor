@@ -53,6 +53,13 @@ android {
         }
     }
 }
+dependencies {
+    implementation "com.airbnb.android:lottie:6.6.3"
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+
+}
 
 flutter {
     source = "../.."
