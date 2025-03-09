@@ -5,23 +5,40 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
+
+
 
 class TvIndoorController extends GetxController {
   
   final RxList<Map<String, dynamic>> news = <Map<String,dynamic>>[].obs;
   final RxString loadingDots = ''.obs;
+  final RxMap<String, dynamic> arquivoAtual = <String, dynamic>{}.obs;
+  final RxString erroVideo = ''.obs;
+
+
+  final List<String> midias = [
+    'assets/midias/img1.jpeg',
+    'assets/midias/img2.jpeg',
+    'assets/midias/videoplayback.mp4',
+  ];
 
 
   String newsUrl = "https://intranet.grupobig.com.br/api/painel/noticias-externas";
   Dio dio = Dio();
   final ScrollController scrollController = ScrollController();
   Timer? _scrollTimer;
+  VideoPlayerController? videoController;
+  late String imagemAtual = 'assets/midias/img1.jpeg';
+
+
 
   @override
   Future<void> onInit() async {
     super.onInit();
     animateDots();
     await getNoticias();
+    await getMidias();
   }
 
   void animateDots(){
@@ -57,28 +74,102 @@ class TvIndoorController extends GetxController {
     }
   }
 
-    void _startAutoScroll() {
+  void _startAutoScroll() {
 
-      _scrollTimer = Timer.periodic(Duration(milliseconds: 20), (timer) {
+    _scrollTimer = Timer.periodic(Duration(milliseconds: 20), (timer) {
 
-        if (scrollController.hasClients) {
+      if (scrollController.hasClients) {
 
-          double maxScroll = scrollController.position.maxScrollExtent;
-          double currentScroll = scrollController.offset;
+        double maxScroll = scrollController.position.maxScrollExtent;
+        double currentScroll = scrollController.offset;
 
-          if (currentScroll < maxScroll) {
+        if (currentScroll < maxScroll) {
 
-            scrollController.jumpTo(currentScroll + 1);
+          scrollController.jumpTo(currentScroll + 1);
 
-          } else {
+        } else {
 
-            scrollController.jumpTo(0);
-
-          }
+          scrollController.jumpTo(0);
 
         }
 
-      });
+      }
+
+    });
+  }
+
+  Future<void> getMidias() async {
+    
+    // setState(() {
+    //   isWebView = true;
+    // });
+    
+    // _webview = WebViewController()
+    //   ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    //   ..loadRequest(Uri.parse(
+    //       'https://intraneth.grupobig.com.br/api/externo/shockmetais'));
+
+
+    // setState(() {
+    //   arquivoAtual = {};
+    // });
+
+    // await Future.delayed(const Duration(seconds: 30));
+    // setState(() {
+    //   isWebView = false;
+    // });
+
+    while (true) {
+
+      for (var midia in midias) {
+
+        if (midia.endsWith('.mp4')) {
+          print(midia);
+          videoController = VideoPlayerController.asset(midia);
+          print(videoController);
+          await videoController!.initialize();
+
+          arquivoAtual.value = {'tipo': 'video', 'path': midia};
+
+          videoController!.setVolume(1);
+          videoController!.play(); 
+
+          // Inicia a reprodução do vídeo
+          videoController!.addListener(() {
+
+            if (videoController!.value.hasError) {
+                erroVideo.value =
+                    'Erro ao reproduzir o vídeo: ${videoController!.value.errorDescription}';
+            }
+
+          });
+
+          await Future.delayed(
+              videoController!.value.duration); // Espera a duração do vídeo
+          
+          await videoController!.dispose();
+
+        } else {
+
+          imagemAtual = midia;
+          print(midia);
+          arquivoAtual.value = {'tipo': 'imagem', 'path': midia};
+
+          await Future.delayed(
+              const Duration(seconds: 20)); // Tempo para exibir cada imagem
+        }
+
+      }
+
+      // setState(() {
+      //   arquivoAtual = {};
+      //   isWebView = true;
+      // });
+      // await Future.delayed(const Duration(seconds: 30));
+      // setState(() {
+      //   isWebView = false;
+      // });
     }
+  }
 
 }
