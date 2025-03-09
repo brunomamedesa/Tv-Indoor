@@ -1,0 +1,2 @@
+C:/Users/User/Development/tv_indoor/android/app/.cxx/RelWithDebInfo/5w4oe3x9/x86/CMakeFiles/edit_cache.dir
+C:/Users/User/Development/tv_indoor/android/app/.cxx/RelWithDebInfo/5w4oe3x9/x86/CMakeFiles/rebuild_cache.dir
