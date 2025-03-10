@@ -43,7 +43,7 @@ class TvIndoorController extends GetxController {
 
   void animateDots(){
 
-    Timer.periodic(const Duration(milliseconds: 500), (timer) {
+    Timer.periodic(const Duration(milliseconds: 400), (timer) {
       if (news.isNotEmpty) {
         timer.cancel();
 
@@ -76,7 +76,7 @@ class TvIndoorController extends GetxController {
 
   void _startAutoScroll() {
 
-    _scrollTimer = Timer.periodic(Duration(milliseconds: 20), (timer) {
+    _scrollTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
 
       if (scrollController.hasClients) {
 
@@ -156,7 +156,7 @@ class TvIndoorController extends GetxController {
           arquivoAtual.value = {'tipo': 'imagem', 'path': midia};
 
           await Future.delayed(
-              const Duration(seconds: 20)); // Tempo para exibir cada imagem
+              const Duration(seconds: 8)); // Tempo para exibir cada imagem
         }
 
       }

@@ -42,12 +42,13 @@ class TvIndoorScreen extends StatelessWidget {
                     : controller.arquivoAtual['tipo'] == 'video' &&
                                                  controller.videoController!.value.isInitialized ?
                       AspectRatio(
-                          aspectRatio:
-                              controller.videoController!
-                                  .value
-                                  .aspectRatio,
-                          child: VideoPlayer(
-                              controller.videoController!,),
+                        key: ValueKey(controller.arquivoAtual['path']),
+                        aspectRatio:
+                            controller.videoController!
+                                .value
+                                .aspectRatio,
+                        child: VideoPlayer(
+                            controller.videoController!,),
                       )
                     : 
                       Container(child: Text('Nao tem nada'),)
