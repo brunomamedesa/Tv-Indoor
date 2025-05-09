@@ -29,23 +29,31 @@ class Noticias extends StatelessWidget {
           ],
         );
       } else {
-        return Row(
+        return Column(
           children: [
+            // faixa superior fixa
+            Container(
+              color: const Color.fromARGB(255, 23, 43, 29),
+              width: double.infinity,
+              height: 40,
+              child: Row(
+                children: [
+              
+                ],
+              ),
+            ),
+            // e logo abaixo, o ListView ocupando TODO o resto da altura
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  controller: controller.scrollController, 
                   itemCount: controller.news.length,
                   itemBuilder: (context, index) {
-        
                     final newsItem = controller.news[index];
-        
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-
                         const Icon(
                           Icons.new_releases_outlined,
                           color: Colors.white,
@@ -61,16 +69,15 @@ class Noticias extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 20),
-
                       ],
                     );
-        
-                  }, 
+                  },
                 ),
-              ) 
-            )
+              ),
+            ),
           ],
         );
+
       }
     });
   }

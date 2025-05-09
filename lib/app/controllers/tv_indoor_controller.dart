@@ -33,6 +33,7 @@ class TvIndoorController extends GetxController {
     ..loadRequest(Uri.parse(
       'https://intraneth.grupobig.com.br/api/externo/shockmetais'
   ));
+
   String newsUrl = "https://intranet.grupobig.com.br/api/painel/noticias-externas";
   Dio dio = Dio();
   final ScrollController scrollController = ScrollController();
@@ -81,7 +82,7 @@ class TvIndoorController extends GetxController {
       final response = await dio.get(newsUrl);
       final List<dynamic> listNews = response.data;
       news.value = List<Map<String, dynamic>>.from(listNews);
-      _startAutoScroll();
+      // _startAutoScroll();
 
     } on DioException catch (e) {
       news.value = [];
@@ -89,29 +90,29 @@ class TvIndoorController extends GetxController {
     }
   }
 
-  void _startAutoScroll() {
+  // void _startAutoScroll() {
 
-    _scrollTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+  //   _scrollTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
 
-      if (scrollController.hasClients) {
+  //     if (scrollController.hasClients) {
 
-        double maxScroll = scrollController.position.maxScrollExtent;
-        double currentScroll = scrollController.offset;
+  //       double maxScroll = scrollController.position.maxScrollExtent;
+  //       double currentScroll = scrollController.offset;
 
-        if (currentScroll < maxScroll) {
+  //       if (currentScroll < maxScroll) {
 
-          scrollController.jumpTo(currentScroll + 1);
+  //         scrollController.jumpTo(currentScroll + 1);
 
-        } else {
+  //       } else {
 
-          scrollController.jumpTo(0);
+  //         scrollController.jumpTo(0);
 
-        }
+  //       }
 
-      }
+  //     }
 
-    });
-  }
+  //   });
+  // }
 
   Future<void> getMidias() async {
         

@@ -48,29 +48,29 @@ class SideBar extends StatelessWidget {
                   child: Container(child: Text('Teste'),),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Center(
-                  child: StreamBuilder<DateTime>(
-                    stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const SizedBox();
+              // Padding(
+              //   padding: const EdgeInsets.only(bottom: 10),
+              //   child: Center(
+              //     child: StreamBuilder<DateTime>(
+              //       stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+              //       builder: (context, snapshot) {
+              //         if (!snapshot.hasData) return const SizedBox();
                 
-                      final time = snapshot.data!;
-                      final formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+              //         final time = snapshot.data!;
+              //         final formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
                 
-                      return Text(
-                        formattedTime,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              )
+              //         return Text(
+              //           formattedTime,
+              //           style: const TextStyle(
+              //             fontSize: 20,
+              //             fontWeight: FontWeight.bold,
+              //             color: Colors.white,
+              //           ),
+              //         );
+              //       },
+              //     ),
+              //   ),
+              // )
             ],
           )
       );
