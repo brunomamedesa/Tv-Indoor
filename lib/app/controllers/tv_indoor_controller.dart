@@ -6,6 +6,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:mobile_device_identifier/mobile_device_identifier.dart';
+
 
 
 
@@ -15,6 +18,8 @@ class TvIndoorController extends GetxController {
   final RxString loadingDots = ''.obs;
   final RxMap<String, dynamic> arquivoAtual = <String, dynamic>{}.obs;
   final RxString erroVideo = ''.obs;
+  final RxBool isWebView = false.obs;
+  final RxString deviceId = ''.obs;
 
 
   final List<String> midias = [
@@ -23,7 +28,11 @@ class TvIndoorController extends GetxController {
     'assets/midias/videoplayback.mp4',
   ];
 
-
+  final WebViewController webview = WebViewController()
+    ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    ..loadRequest(Uri.parse(
+      'https://intraneth.grupobig.com.br/api/externo/shockmetais'
+  ));
   String newsUrl = "https://intranet.grupobig.com.br/api/painel/noticias-externas";
   Dio dio = Dio();
   final ScrollController scrollController = ScrollController();
@@ -38,7 +47,13 @@ class TvIndoorController extends GetxController {
     super.onInit();
     animateDots();
     await getNoticias();
+    await getDeviceId();
     await getMidias();
+  }
+
+  Future<void> getDeviceId() async{
+    deviceId.value = (await MobileDeviceIdentifier().getDeviceId())!;
+    print('Dispositivo: ${deviceId.value}');
   }
 
   void animateDots(){
@@ -99,25 +114,8 @@ class TvIndoorController extends GetxController {
   }
 
   Future<void> getMidias() async {
-    
-    // setState(() {
-    //   isWebView = true;
-    // });
-    
-    // _webview = WebViewController()
-    //   ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    //   ..loadRequest(Uri.parse(
-    //       'https://intraneth.grupobig.com.br/api/externo/shockmetais'));
+        
 
-
-    // setState(() {
-    //   arquivoAtual = {};
-    // });
-
-    // await Future.delayed(const Duration(seconds: 30));
-    // setState(() {
-    //   isWebView = false;
-    // });
 
     while (true) {
 
@@ -160,15 +158,6 @@ class TvIndoorController extends GetxController {
         }
 
       }
-
-      // setState(() {
-      //   arquivoAtual = {};
-      //   isWebView = true;
-      // });
-      // await Future.delayed(const Duration(seconds: 30));
-      // setState(() {
-      //   isWebView = false;
-      // });
     }
   }
 

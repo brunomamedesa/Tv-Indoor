@@ -4,6 +4,7 @@ import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
 import 'package:tv_indoor/app/screens/widgets/noticias_widget.dart';
 import 'package:video_player/video_player.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class TvIndoorScreen extends StatelessWidget {
 
@@ -17,9 +18,10 @@ class TvIndoorScreen extends StatelessWidget {
       return 
         Scaffold(
           backgroundColor: Colors.white,
-          body: Stack(
+          body: 
+          Stack(
             children: [
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: double.infinity,
                 child: AnimatedSwitcher(
@@ -56,10 +58,7 @@ class TvIndoorScreen extends StatelessWidget {
               ),
             ],
           ),
-          bottomNavigationBar: BottomAppBar(
-            color: Theme.of(context).colorScheme.primary,
-            child: Noticias(controller: controller)
-          )
+
         );
     },);
   }
