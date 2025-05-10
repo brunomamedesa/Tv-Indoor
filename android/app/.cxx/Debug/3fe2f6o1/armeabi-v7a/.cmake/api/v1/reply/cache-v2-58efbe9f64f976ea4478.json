@@ -11,7 +11,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "x86_64"
+			"value" : "armeabi-v7a"
 		},
 		{
 			"name" : "ANDROID_NDK",
@@ -63,7 +63,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "x86_64"
+			"value" : "armeabi-v7a"
 		},
 		{
 			"name" : "CMAKE_ANDROID_NDK",
@@ -151,7 +151,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "c:/Users/User/Development/tv_indoor/android/app/.cxx/Debug/3fe2f6o1/x86_64"
+			"value" : "c:/Users/User/Development/tv_indoor/android/app/.cxx/Debug/3fe2f6o1/armeabi-v7a"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -751,7 +751,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\User\\Development\\tv_indoor\\build\\app\\intermediates\\cxx\\Debug\\3fe2f6o1\\obj\\x86_64"
+			"value" : "C:\\Users\\User\\Development\\tv_indoor\\build\\app\\intermediates\\cxx\\Debug\\3fe2f6o1\\obj\\armeabi-v7a"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -779,7 +779,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\User\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe"
+			"value" : "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe"
 		},
 		{
 			"name" : "CMAKE_MODULE_LINKER_FLAGS",
@@ -1023,7 +1023,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\User\\Development\\tv_indoor\\build\\app\\intermediates\\cxx\\Debug\\3fe2f6o1\\obj\\x86_64"
+			"value" : "C:\\Users\\User\\Development\\tv_indoor\\build\\app\\intermediates\\cxx\\Debug\\3fe2f6o1\\obj\\armeabi-v7a"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1331,7 +1331,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/User/Development/tv_indoor/android/app/.cxx/Debug/3fe2f6o1/x86_64"
+			"value" : "C:/Users/User/Development/tv_indoor/android/app/.cxx/Debug/3fe2f6o1/armeabi-v7a"
 		},
 		{
 			"name" : "Project_IS_TOP_LEVEL",
