@@ -23,6 +23,6 @@ class SplashActivity : AppCompatActivity() {
             startActivity(Intent(this, MainActivity::class.java))
             finish() // Fecha a SplashActivity
 
-        }, 8000)  
+        }, 3000)  
     }
 }
