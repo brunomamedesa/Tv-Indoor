@@ -16,6 +16,8 @@ dependencies:
   video_player: ^2.9.3
   webview_flutter: ^4.11.0
   mobile_device_identifier: ^0.0.3
+  intl: ^0.20.2
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
