@@ -24,18 +24,55 @@ class SideBar extends StatelessWidget {
           Column(   
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Text(
-                      'TV'
-                    )
+                  const Row(
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(left: 12, top: 8, ),
+                        child: Text(
+                          'TV',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 50,
+                            height: 0
+                          ),
+                        )
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(left: 10, top: 15),
+                        child: Text(
+                          'indoor',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 35,
+                            height: 0
+                          ),
+                        )
+                      ),
+                    ],
                   ),
+                  Transform.translate(
+                    offset: const Offset(14, -10), // x = 12 para alinhar o left, y = -6 para subir
+                    child: const Text(
+                      'tv corporativa',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w100,
+                        fontSize: 15,
+                        height: 1.0,
+                      ),
+                    ),
+                  )
                 ],
               ),
-              Expanded(
-                flex: 2,
+              const SizedBox(height: 50,),
+              SizedBox(
+                height: 95,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: WebViewWidget(controller: controller.webview),
@@ -48,29 +85,6 @@ class SideBar extends StatelessWidget {
                   child: Container(child: Text('Teste'),),
                 ),
               ),
-              // Padding(
-              //   padding: const EdgeInsets.only(bottom: 10),
-              //   child: Center(
-              //     child: StreamBuilder<DateTime>(
-              //       stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
-              //       builder: (context, snapshot) {
-              //         if (!snapshot.hasData) return const SizedBox();
-                
-              //         final time = snapshot.data!;
-              //         final formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
-                
-              //         return Text(
-              //           formattedTime,
-              //           style: const TextStyle(
-              //             fontSize: 20,
-              //             fontWeight: FontWeight.bold,
-              //             color: Colors.white,
-              //           ),
-              //         );
-              //       },
-              //     ),
-              //   ),
-              // )
             ],
           )
       );
