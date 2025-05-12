@@ -1,14 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
+import 'package:tv_indoor/app/utils/globals.dart';
 
 class ConfigScreen extends StatelessWidget {
 
   ConfigScreen({super.key});
   final ConfigController controller = Get.find();
-
-
-
+  
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -76,14 +77,16 @@ class ConfigScreen extends StatelessWidget {
                                   width: MediaQuery.of(context).size.width / 3,
                                   height: 60,
                                   child: ElevatedButton(
-                                    onPressed: () {
-
-
+                                    onPressed: () async {
+                                      await controller.autenticarDispositivo();
+                                      if(controller.allDone && configurado.isTrue){
+                                          Get.offNamed('/tv-indoor');
+                                      }
                                     },
                                     autofocus: true, // para TVs, assegure que o botão receba foco
                                     style: ButtonStyle(
                                       backgroundColor: WidgetStateProperty.all(Colors.blue.shade100),
-                                      shape: MaterialStateProperty.all<OutlinedBorder>(
+                                      shape: WidgetStateProperty.all<OutlinedBorder>(
                                         RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(15), // ajuste o valor conforme desejado
                                         ),
@@ -112,8 +115,7 @@ class ConfigScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                      
-                        ],
+                        ]
                       ),
                     ],
                   ),

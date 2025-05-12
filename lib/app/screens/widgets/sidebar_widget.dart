@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
+import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class SideBar extends StatelessWidget {
 
-  final TvIndoorController controller = Get.find();
+  final WebviewController controller = Get.put(WebviewController());
+  
   SideBar({
     super.key,
   });
@@ -82,7 +84,7 @@ class SideBar extends StatelessWidget {
                 flex: 5,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Container(child: Text('Teste'),),
+                  child: Container(),
                 ),
               ),
             ],

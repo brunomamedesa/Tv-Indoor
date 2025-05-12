@@ -1,19 +1,45 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:mobile_device_identifier/mobile_device_identifier.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tv_indoor/app/utils/globals.dart';
+import 'package:tv_indoor/app/utils/media_cache_manager.dart';
 
 class ConfigController extends GetxController {
   
   final RxString deviceId = ''.obs;
   final RxBool isLoading = false.obs;
-  final RxMap<String, dynamic> devideData = <String, dynamic>{}.obs;
+  final RxBool loadingMidias = false.obs;
+  final RxMap<String, dynamic> deviceData = <String, dynamic>{}.obs;
+  final RxList<RxMap<String, dynamic>> midiasCache = <RxMap<String, dynamic>>[].obs;
+  
+
 
   final baseUrl = kDebugMode ? dotenv.env['BASE_URL_PROD'] : dotenv.env['BASE_URL_PROD'];
   final apiKey = dotenv.env['API_KEY'];
 
   final dio = Dio();
+  final CacheManager _mediaCache = MediaCacheManager();
+
+  double get totalProgress {
+    if (midiasCache.isEmpty) return 0.0;
+    final sum = midiasCache
+        .map((e) => e['progress'] as double)
+        .fold(0.0, (a, b) => a + b);
+    return sum / midiasCache.length;
+  }
+
+  bool get allDone => midiasCache.every((e) => (e['progress'] as double) >= 1.0);
+
 
 
   @override
@@ -21,7 +47,6 @@ class ConfigController extends GetxController {
     super.onInit();
     deviceId.value = (await getDeviceId())!;
     await autenticarDispositivo();
-    
   }
 
 
@@ -39,17 +64,111 @@ class ConfigController extends GetxController {
           'Authorization': 'Bearer $apiKey',
         })
       );
-      print(response.data);
-      devideData.value = response.data;
-      print(devideData);
 
+      deviceData.value = response.data;
+      
+      if(deviceData['midias'].length > 0 && configurado.isTrue) {
+        await handleMidias(deviceData['midias']);
+      }
     }
     on DioException catch (e) {
       print(e.response);
     }
     catch (e) {
       print(e); 
+    } finally {
+      isLoading.value = false;
+      configurado.value = true;
     }
+    
   }
+
+
+Future<void> handleMidias(List<dynamic> rawMidias) async {
+  showDownloadProgress();
+  _mediaCache.emptyCache();
+  loadingMidias.value = true;
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final futures = <Future<void>>[];
+
+  for (var m in rawMidias) {
+    final url   = m['url']   as String;
+    final tipo  = m['tipo']  as String;
+
+    // 1) Cria o RxMap e adiciona na RxList
+    final entrada = <String, dynamic>{
+      'tipo': tipo,
+      'url': url,
+      'file': null,
+      'progress': 0.0,
+    }.obs;
+
+    midiasCache.add(entrada);
+
+    // cria um Completer que vamos completar no evento FileInfo
+    final completer = Completer<void>();
+    futures.add(completer.future);
+
+    // 2) Pega o stream de download com progresso
+    final stream = _mediaCache.getFileStream(url, withProgress: true);
+    // 3) Escuta o stream
+    stream.listen((resp) {
+      if (resp is DownloadProgress) {
+        final pct = resp.totalSize != null
+            ? resp.downloaded / resp.totalSize!
+            : 0.0;
+        entrada['progress'] = pct;
+        entrada.refresh();
+      } else if (resp is FileInfo) {
+        entrada['file']     = resp.file;
+        entrada['progress'] = 1.0;
+        entrada.refresh();
+        completer.complete();           // sinaliza que esse download acabou
+      }
+    });
+  }
+
+  await Future.wait(futures);
+  prefs.setString('midias', jsonEncode(midiasCache));
+  print(midiasCache);
+  loadingMidias.value = false;
+}
+
+void showDownloadProgress() {
+  Get.dialog(
+    AlertDialog(
+      title: const Text('Baixando mídias'),
+      content: SizedBox(
+        width: 400,
+        height: 50, // espaço suficiente
+        child: Obx(() {
+          // pega o total agregado
+          final pct = totalProgress;
+          final label = allDone
+            ? 'Concluído!'
+            : 'Baixando mídias: ${(pct * 100).toStringAsFixed(0)}%';
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label),
+              const SizedBox(height: 16),
+              LinearProgressIndicator(value: pct),
+            ],
+          );
+        }),
+      ),
+      actions: [
+        Obx(() {
+          return TextButton(
+            onPressed: allDone && loadingMidias.isFalse ? () => Get.offNamed('/tv-indoor') : null,
+            child: const Text('Fechar'),
+          );
+        }),
+      ],
+    ),
+    barrierDismissible: false,
+  );
+}
+
 
 }

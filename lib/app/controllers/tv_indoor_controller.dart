@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:mobile_device_identifier/mobile_device_identifier.dart';
@@ -18,21 +19,15 @@ class TvIndoorController extends GetxController {
   final RxString loadingDots = ''.obs;
   final RxMap<String, dynamic> arquivoAtual = <String, dynamic>{}.obs;
   final RxString erroVideo = ''.obs;
-  final RxBool isWebView = false.obs;
   final RxString deviceId = ''.obs;
+  final RxList<RxMap<String, dynamic>> midias = <RxMap<String, dynamic>>[].obs;
 
+  // final List<String> midias = [
+  //   'assets/midias/img1.jpeg',
+  //   'assets/midias/img2.jpeg',
+  //   'assets/midias/videoplayback.mp4',
+  // ];
 
-  final List<String> midias = [
-    'assets/midias/img1.jpeg',
-    'assets/midias/img2.jpeg',
-    'assets/midias/videoplayback.mp4',
-  ];
-
-  final WebViewController webview = WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..loadRequest(Uri.parse(
-      'https://intraneth.grupobig.com.br/api/externo/shockmetais'
-  ));
 
   Dio dio = Dio();
   final ScrollController scrollController = ScrollController();
@@ -47,46 +42,51 @@ class TvIndoorController extends GetxController {
   }
 
   Future<void> getMidias() async {
-        
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final midiaEncode =  prefs.getString('midias');
+    midias.value = jsonDecode(midiaEncode!);
+    print(midias);
+
     while (true) {
 
       for (var midia in midias) {
 
-        if (midia.endsWith('.mp4')) {
-          print(midia);
-          videoController = VideoPlayerController.asset(midia);
-          print(videoController);
-          await videoController!.initialize();
+        print(midia);
+        // if (midia.endsWith('.mp4')) {
+        //   print(midia);
+        //   videoController = VideoPlayerController.asset(midia);
+        //   print(videoController);
+        //   await videoController!.initialize();
 
-          arquivoAtual.value = {'tipo': 'video', 'path': midia};
+        //   arquivoAtual.value = {'tipo': 'video', 'path': midia};
 
-          videoController!.setVolume(1);
-          videoController!.play(); 
+        //   videoController!.setVolume(1);
+        //   videoController!.play(); 
 
-          // Inicia a reprodução do vídeo
-          videoController!.addListener(() {
+        //   // Inicia a reprodução do vídeo
+        //   videoController!.addListener(() {
 
-            if (videoController!.value.hasError) {
-                erroVideo.value =
-                    'Erro ao reproduzir o vídeo: ${videoController!.value.errorDescription}';
-            }
+        //     if (videoController!.value.hasError) {
+        //         erroVideo.value =
+        //             'Erro ao reproduzir o vídeo: ${videoController!.value.errorDescription}';
+        //     }
 
-          });
+        //   });
 
-          await Future.delayed(
-              videoController!.value.duration); // Espera a duração do vídeo
+        //   await Future.delayed(
+        //       videoController!.value.duration); // Espera a duração do vídeo
           
-          await videoController!.dispose();
+        //   await videoController!.dispose();
 
-        } else {
+        // } else {
 
-          imagemAtual = midia;
-          print(midia);
-          arquivoAtual.value = {'tipo': 'imagem', 'path': midia};
+        //   imagemAtual = midia;
+        //   print(midia);
+        //   arquivoAtual.value = {'tipo': 'imagem', 'path': midia};
 
-          await Future.delayed(
-              const Duration(seconds: 8)); // Tempo para exibir cada imagem
-        }
+        //   await Future.delayed(
+        //       const Duration(seconds: 8)); // Tempo para exibir cada imagem
+        // }
 
       }
     }

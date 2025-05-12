@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:tv_indoor/app/controllers/noticias_controller.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
 import 'package:tv_indoor/app/routes/app_pages.dart';
-import 'package:tv_indoor/app/screens/tv_indoor_screen.dart';
 import 'package:tv_indoor/app/screens/widgets/noticias_widget.dart';
 import 'package:tv_indoor/app/screens/widgets/sidebar_widget.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -15,8 +13,7 @@ void main() async {
   await dotenv.load(fileName: ".env");
   initializeDateFormatting('pt_BR');
 
-  Get.put(TvIndoorController());
-  runApp( MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
