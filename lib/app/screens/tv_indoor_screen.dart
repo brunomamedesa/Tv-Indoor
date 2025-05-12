@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
-import 'package:tv_indoor/app/screens/widgets/noticias_widget.dart';
 import 'package:video_player/video_player.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:io';
 
 class TvIndoorScreen extends StatelessWidget {
 
@@ -15,6 +13,8 @@ class TvIndoorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return 
     Obx(() {
+      final m = controller.mediaAtual;
+      print(m);
       return 
         Scaffold(
           backgroundColor: Colors.white,
@@ -30,21 +30,17 @@ class TvIndoorScreen extends StatelessWidget {
                     width: MediaQuery.of(context).size.width,
                     height: MediaQuery.of(context).size.height,
 
-                    key: ValueKey(controller.arquivoAtual['path']),
+                    key: ValueKey(m['file']),
                     decoration: const BoxDecoration(
                       color: Colors.black,
                     ),
                   child: 
-                    controller.arquivoAtual['tipo'] == 'imagem' ?
-                      Image.asset(
-                        controller.imagemAtual,
-                        key: ValueKey(controller.arquivoAtual['path']),
-                        fit: BoxFit.fill,
-                      )
-                    : controller.arquivoAtual['tipo'] == 'video' &&
-                                                 controller.videoController!.value.isInitialized ?
+                    m.isEmpty ?
+                      const Center(child: CircularProgressIndicator(),)
+                      :
+                    m['url'].toString().endsWith('.mp4') && controller.videoController!.value.isInitialized == true ?
                       AspectRatio(
-                        key: ValueKey(controller.arquivoAtual['path']),
+                        key: ValueKey(m['file']),
                         aspectRatio:
                             controller.videoController!
                                 .value
@@ -52,8 +48,14 @@ class TvIndoorScreen extends StatelessWidget {
                         child: VideoPlayer(
                             controller.videoController!,),
                       )
+                    : !m['url'].toString().endsWith('.mp4') ?
+                      Image.file(
+                        File(m['file']),
+                        key: ValueKey(m['file']),
+                        fit: BoxFit.fill,
+                      )
                     : 
-                      Container(child: Text('Nao tem nada'),)
+                    const Center(child: CircularProgressIndicator(),)
                 )),
               ),
             ],

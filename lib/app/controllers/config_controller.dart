@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -66,8 +68,10 @@ class ConfigController extends GetxController {
       );
 
       deviceData.value = response.data;
-      
+      configurado.value = deviceData['configurado']; 
+
       if(deviceData['midias'].length > 0 && configurado.isTrue) {
+        
         await handleMidias(deviceData['midias']);
       }
     }
@@ -78,15 +82,20 @@ class ConfigController extends GetxController {
       print(e); 
     } finally {
       isLoading.value = false;
-      configurado.value = true;
+      if(loadingMidias.isFalse && midiasCache.isNotEmpty){
+        print('aqui');
+        Get.delete<ConfigController>();
+        Get.offAllNamed('/tv-indoor');
+      }
     }
     
   }
 
 
 Future<void> handleMidias(List<dynamic> rawMidias) async {
+  
+  // _mediaCache.emptyCache();
   showDownloadProgress();
-  _mediaCache.emptyCache();
   loadingMidias.value = true;
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final futures = <Future<void>>[];
@@ -111,27 +120,34 @@ Future<void> handleMidias(List<dynamic> rawMidias) async {
 
     // 2) Pega o stream de download com progresso
     final stream = _mediaCache.getFileStream(url, withProgress: true);
+
     // 3) Escuta o stream
+
     stream.listen((resp) {
       if (resp is DownloadProgress) {
+        print('download');
         final pct = resp.totalSize != null
             ? resp.downloaded / resp.totalSize!
             : 0.0;
         entrada['progress'] = pct;
         entrada.refresh();
-      } else if (resp is FileInfo) {
-        entrada['file']     = resp.file;
+
+      } else if (resp is FileInfo) 
+      {
+        print('ja ta no cache');
+        entrada['file'] = resp.file.path;
         entrada['progress'] = 1.0;
         entrada.refresh();
-        completer.complete();           // sinaliza que esse download acabou
+        completer.complete();  
+                 // sinaliza que esse download acabou
       }
     });
   }
 
   await Future.wait(futures);
   prefs.setString('midias', jsonEncode(midiasCache));
-  print(midiasCache);
   loadingMidias.value = false;
+
 }
 
 void showDownloadProgress() {
@@ -157,14 +173,6 @@ void showDownloadProgress() {
           );
         }),
       ),
-      actions: [
-        Obx(() {
-          return TextButton(
-            onPressed: allDone && loadingMidias.isFalse ? () => Get.offNamed('/tv-indoor') : null,
-            child: const Text('Fechar'),
-          );
-        }),
-      ],
     ),
     barrierDismissible: false,
   );

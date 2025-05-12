@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -21,75 +22,73 @@ class TvIndoorController extends GetxController {
   final RxString erroVideo = ''.obs;
   final RxString deviceId = ''.obs;
   final RxList<RxMap<String, dynamic>> midias = <RxMap<String, dynamic>>[].obs;
+  final RxInt _currentIndex = 0.obs;
 
-  // final List<String> midias = [
-  //   'assets/midias/img1.jpeg',
-  //   'assets/midias/img2.jpeg',
-  //   'assets/midias/videoplayback.mp4',
-  // ];
-
-
+  Timer? _mediaTimer;
   Dio dio = Dio();
-  final ScrollController scrollController = ScrollController();
-  Timer? _scrollTimer;
   VideoPlayerController? videoController;
-  late String imagemAtual = 'assets/midias/img1.jpeg';
+  
+
+  Map<String, dynamic> get mediaAtual => midias.isEmpty ? {} : midias[_currentIndex.value];
+
 
   @override
   Future<void> onInit() async {
     super.onInit();
-    getMidias();
+    await getMidias();
+    print('Midias on init:: $midias');
+    if(midias.isNotEmpty){
+      _playNext();
+    }
   }
 
   Future<void> getMidias() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final midiaEncode =  prefs.getString('midias');
-    midias.value = jsonDecode(midiaEncode!);
-    print(midias);
+    midias.assignAll(
+      (jsonDecode(midiaEncode!) as List).map((e) => Map<String, dynamic>.from(e).obs).toList()
+    );
 
-    while (true) {
-
-      for (var midia in midias) {
-
-        print(midia);
-        // if (midia.endsWith('.mp4')) {
-        //   print(midia);
-        //   videoController = VideoPlayerController.asset(midia);
-        //   print(videoController);
-        //   await videoController!.initialize();
-
-        //   arquivoAtual.value = {'tipo': 'video', 'path': midia};
-
-        //   videoController!.setVolume(1);
-        //   videoController!.play(); 
-
-        //   // Inicia a reprodução do vídeo
-        //   videoController!.addListener(() {
-
-        //     if (videoController!.value.hasError) {
-        //         erroVideo.value =
-        //             'Erro ao reproduzir o vídeo: ${videoController!.value.errorDescription}';
-        //     }
-
-        //   });
-
-        //   await Future.delayed(
-        //       videoController!.value.duration); // Espera a duração do vídeo
-          
-        //   await videoController!.dispose();
-
-        // } else {
-
-        //   imagemAtual = midia;
-        //   print(midia);
-        //   arquivoAtual.value = {'tipo': 'imagem', 'path': midia};
-
-        //   await Future.delayed(
-        //       const Duration(seconds: 8)); // Tempo para exibir cada imagem
-        // }
-
-      }
-    }
   }
 
+  Future<void> _playNext() async {
+    if (midias.isEmpty) return;
+    final m = mediaAtual;
+    
+    await videoController?.dispose();
+    if (m['tipo'] == 'video' && m['url'].toString().endsWith('.mp4') ) {
+      print('video: $m');
+      videoController = VideoPlayerController.file(File(m['file']));
+      await videoController!.initialize();
+      videoController!.setVolume(1);
+      videoController!.play();
+      videoController!.addListener(() {
+        if (videoController!.value.hasError) {
+            erroVideo.value =
+                'Erro ao reproduzir o vídeo: ${videoController!.value.errorDescription}';
+        }
+      });
+      
+      await Future.delayed(videoController!.value.duration);
+
+    } else {
+      print('imagem: $m');
+      await Future.delayed(const Duration(seconds: 8));
+
+    }
+
+    _advanceIndex();
+    _playNext(); 
+  }
+
+  void _advanceIndex() {
+    _currentIndex.value = (_currentIndex.value + 1) % midias.length;
+  }
+
+  @override
+  void onClose() {
+    _mediaTimer?.cancel();
+    videoController?.dispose();
+    super.onClose();
+  }
 }
