@@ -16,7 +16,7 @@ class AppPages {
       page: () => ConfigScreen(),
       binding: BindingsBuilder(() {
         // registra a instância para que Get.find<ConfigController>() funcione
-        Get.put(ConfigController());
+        Get.put(ConfigController(), permanent: true);
       }),
     ),
     GetPage(
