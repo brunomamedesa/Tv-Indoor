@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get_instance/get_instance.dart';
 import 'package:get/state_manager.dart';
 import 'package:tv_indoor/app/controllers/noticias_controller.dart';
-import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
 import 'package:intl/intl.dart';
 
 
