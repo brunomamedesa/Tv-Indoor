@@ -31,8 +31,10 @@ flutter:
   assets:
     - .env
     - assets/
-    - assets/midias/videoplayback.mp4
-    - assets/midias/img1.jpeg
-    - assets/midias/img2.jpeg
+    - assets/img-sidebar/image-side.png
+    - assets/logos/logo-sidebar.png
+    - assets/logos/logoTV01.png
+
+
 
 
