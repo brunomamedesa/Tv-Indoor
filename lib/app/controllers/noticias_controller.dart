@@ -27,7 +27,7 @@ class NoticiasController extends GetxController{
       news.value = List<Map<String, dynamic>>.from(listNews);
       // _startAutoScroll();
 
-    } on DioException catch (e) {
+    } on DioException {
       news.value = [];
       return;
     }

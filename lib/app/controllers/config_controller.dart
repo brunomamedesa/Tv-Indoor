@@ -2,17 +2,16 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:mobile_device_identifier/mobile_device_identifier.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/utils/globals.dart';
 import 'package:tv_indoor/app/utils/media_cache_manager.dart';
 
@@ -56,9 +55,8 @@ class ConfigController extends GetxController {
     return await MobileDeviceIdentifier().getDeviceId(); 
   }
 
-  Future<void> autenticarDispositivo() async {
-    try {
-      isLoading.value = true;
+  Future<void> fetchData() async {
+    try { 
       final response = await dio.get(
         '$baseUrl/dispositivo/${deviceId.value}', 
         options: Options(
@@ -68,87 +66,144 @@ class ConfigController extends GetxController {
       );
 
       deviceData.value = response.data;
+
+    } on DioException catch (e) {
+      print(e);
+      rethrow;
+    }
+  }
+
+  Future<void> autenticarDispositivo() async {
+    try {
+
+      isLoading.value = true;
+      await fetchData();
       configurado.value = deviceData['configurado']; 
 
-      if(deviceData['midias'].length > 0 && configurado.isTrue) {
+      await saveCotacoes();
+
+      if(configurado.isTrue) {
         
         await handleMidias(deviceData['midias']);
+        Get.back();
+        print('midiasCache: $midiasCache');
+
+        if(loadingMidias.isFalse){
+          Get.offAllNamed('/tv-indoor');
+        }
       }
-    }
-    on DioException catch (e) {
-      print(e.response);
-    }
-    catch (e) {
-      print(e); 
+    } catch (e) {
+      print(e);
     } finally {
       isLoading.value = false;
-      if(loadingMidias.isFalse && midiasCache.isNotEmpty){
-        print('aqui');
-        Get.delete<ConfigController>();
-        Get.offAllNamed('/tv-indoor');
-      }
     }
     
   }
 
 
-Future<void> handleMidias(List<dynamic> rawMidias) async {
-  
-  // _mediaCache.emptyCache();
-  showDownloadProgress();
-  loadingMidias.value = true;
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final futures = <Future<void>>[];
+  Future<void> refreshData() async {
+    try {
 
-  for (var m in rawMidias) {
-    final url   = m['url']   as String;
-    final tipo  = m['tipo']  as String;
+      isLoading.value = true;
+      await fetchData();
+      await saveCotacoes();
+      await handleMidias(deviceData['midias']);
+      Get.back();
+      isLoading.value = false;
 
-    // 1) Cria o RxMap e adiciona na RxList
-    final entrada = <String, dynamic>{
-      'tipo': tipo,
-      'url': url,
-      'file': null,
-      'progress': 0.0,
-    }.obs;
+    } catch (e) {
+      print(e);
+    }
 
-    midiasCache.add(entrada);
-
-    // cria um Completer que vamos completar no evento FileInfo
-    final completer = Completer<void>();
-    futures.add(completer.future);
-
-    // 2) Pega o stream de download com progresso
-    final stream = _mediaCache.getFileStream(url, withProgress: true);
-
-    // 3) Escuta o stream
-
-    stream.listen((resp) {
-      if (resp is DownloadProgress) {
-        print('download');
-        final pct = resp.totalSize != null
-            ? resp.downloaded / resp.totalSize!
-            : 0.0;
-        entrada['progress'] = pct;
-        entrada.refresh();
-
-      } else if (resp is FileInfo) 
-      {
-        print('ja ta no cache');
-        entrada['file'] = resp.file.path;
-        entrada['progress'] = 1.0;
-        entrada.refresh();
-        completer.complete();  
-                 // sinaliza que esse download acabou
-      }
-    });
   }
 
-  await Future.wait(futures);
-  prefs.setString('midias', jsonEncode(midiasCache));
-  loadingMidias.value = false;
+  Future<void> saveCotacoes() async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      var cotacoes = deviceData['cotacoes'];
+      prefs.setString('cotacoes', jsonEncode(cotacoes));
+      WebviewController webviewController = Get.find<WebviewController>();
+      webviewController.getCotacoes();
+  }
 
-}
+  Future<void> handleMidias(List<dynamic> rawMidias) async {
+  
+    final Set<String> apiUrls = rawMidias
+      .map((m) => m['url'] as String)
+      .toSet();
+
+    print(apiUrls);
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final items =  prefs.getString('midias');
+    final itemsDecoded = jsonDecode(items!) as List;
+
+    final toRemove = itemsDecoded
+      .where((m) => !apiUrls.contains(m['url'] as String))
+      .toList();  // <— materializa
+      
+    print('remover: $toRemove');
+
+    for (final rm in toRemove) {
+      final url = rm['url'] as String;
+      await _mediaCache.removeFile(url);
+      itemsDecoded.removeWhere((e) => e['url'] == url);
+    }
+
+    prefs.setString('midias', jsonEncode(itemsDecoded));
+    showDownloadProgress();
+    loadingMidias.value = true;
+
+    final futures = <Future<void>>[];
+
+    for (var m in rawMidias) {
+      final url   = m['url']   as String;
+      final tipo  = m['tipo']  as String;
+
+      // 1) Cria o RxMap e adiciona na RxList
+      final entrada = <String, dynamic>{
+        'tipo': tipo,
+        'url': url,
+        'file': null,
+        'progress': 0.0,
+      }.obs;
+
+      midiasCache.add(entrada);
+
+      // cria um Completer que vamos completar no evento FileInfo
+      final completer = Completer<void>();
+      futures.add(completer.future);
+
+      // 2) Pega o stream de download com progresso
+      final stream = _mediaCache.getFileStream(url, withProgress: true);
+
+      // 3) Escuta o stream
+
+      stream.listen((resp) {
+        if (resp is DownloadProgress) {
+          final pct = resp.totalSize != null
+              ? resp.downloaded / resp.totalSize!
+              : 0.0;
+          entrada['progress'] = pct;
+          entrada.refresh();
+
+        } else if (resp is FileInfo) 
+        {
+          entrada['file'] = resp.file.path;
+          entrada['progress'] = 1.0;
+          entrada.refresh();
+          completer.complete();  
+                  // sinaliza que esse download acabou
+        }
+      });
+    }
+
+    await Future.wait(futures);
+    prefs.setString('midias', jsonEncode(midiasCache));
+    loadingMidias.value = false;
+    return;
+
+  }
 
 void showDownloadProgress() {
   Get.dialog(
