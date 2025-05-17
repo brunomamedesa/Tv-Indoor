@@ -14,8 +14,7 @@ class TvIndoorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return 
     Obx(() {
-      print('midia atual montagem do wiget: ${controller.mediaAtual}');
-      print('file: ${controller.mediaAtual['file']}');
+      print('midia atual wiget: ${controller.mediaAtual}');
       return 
         Scaffold(
           backgroundColor: Colors.white,
@@ -54,12 +53,18 @@ class TvIndoorScreen extends StatelessWidget {
                         )
                       ] else if (controller.existeMidia.isTrue &&  controller.mediaAtual['tipo'] == 'imagem') ... [
                         Expanded(
-                          child: Image.file(
-                            File(controller.mediaAtual['file']),
+                          child: Container(
                             key: ValueKey(controller.mediaAtual['file']),
-                            fit: BoxFit.fill,
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: FileImage(File(controller.mediaAtual['file'])),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
-                        )
+                        ),
                       ] else if (controller.existeMidia.isFalse && controller.isLoading.isFalse) ... [
                         Expanded(
                           child: Column(
@@ -136,7 +141,7 @@ class TvIndoorScreen extends StatelessWidget {
                 top: 3,
                 child: Image.asset(
                   'assets/logos/logoTV01.png',
-                  height: 30,
+                  height: 50,
                 )
               )
             ],

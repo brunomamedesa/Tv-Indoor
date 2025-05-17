@@ -37,7 +37,6 @@ class TvIndoorController extends GetxController {
   }
 
   Future<void> reload() async {
-    print('a');
     isLoading.value = true;
     await getMidias();
     _playNext();
@@ -90,7 +89,7 @@ class TvIndoorController extends GetxController {
     } else {
       
       isLoading.value = false;
-      await Future.delayed(const Duration(seconds: 8));
+      await Future.delayed(const Duration(seconds: 30));
 
     }
 

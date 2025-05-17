@@ -10,7 +10,7 @@ class Noticias extends StatelessWidget {
     super.key,
   });
 
-  final  controller = Get.put(NoticiasController());
+  final controller = Get.put(NoticiasController());
 
   @override
   Widget build(BuildContext context) {
@@ -80,11 +80,12 @@ class Noticias extends StatelessWidget {
                                 decoration: const BoxDecoration(
                                   color: Color.fromRGBO(17, 137, 73, 1)
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'ÚTLIMAS NOTÍCIAS',
+                                    controller.news[controller.currentIndex.value]['tag'],
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       color: Colors.white
                                     ),
                                   ),
@@ -140,8 +141,8 @@ class Noticias extends StatelessWidget {
               top: 40,      // ajuste a posição vertical
               left: 133,   // ajuste a posição horizontal
               child: Container(
-                width: 800,
-                height: 65,
+                width: 850,
+                height: 70,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -150,10 +151,10 @@ class Noticias extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Expansão do Brics: bloco anuncia 6 novos membros',
+                    Text(
+                      controller.news[controller.currentIndex.value]['titulo'],
                       // textAlign: TextAlign.start,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Color.fromRGBO(66, 97, 76, 1),
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
@@ -161,10 +162,11 @@ class Noticias extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'O Brics formado por Brasil, Rússia, Índia, China e África do Sul anunciou um processo de expansão do grupo',
+                      controller.news[controller.currentIndex.value]['noticia'],
+                      softWrap: true,
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: 14,
+                        fontSize: 13,
                         height: 0,
                         fontWeight: FontWeight.bold,
                       ),

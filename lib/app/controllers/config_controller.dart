@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 import 'package:mobile_device_identifier/mobile_device_identifier.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tv_indoor/app/controllers/noticias_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/utils/globals.dart';
 import 'package:tv_indoor/app/utils/media_cache_manager.dart';
@@ -50,6 +51,16 @@ class ConfigController extends GetxController {
     await autenticarDispositivo();
   }
 
+  void reset() {
+    print('resetando');
+    isLoading.value = true;
+    deviceId.value = '';
+    midiasCache.clear();
+    midiasCache.clear();
+    onInit();
+
+  }
+
 
   Future<String?> getDeviceId() async{
     return await MobileDeviceIdentifier().getDeviceId(); 
@@ -80,13 +91,14 @@ class ConfigController extends GetxController {
       await fetchData();
       configurado.value = deviceData['configurado']; 
 
+      iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
       await saveCotacoes();
+      await saveNoticias();
 
       if(configurado.isTrue) {
         
         await handleMidias(deviceData['midias']);
         Get.back();
-        print('midiasCache: $midiasCache');
 
         if(loadingMidias.isFalse){
           Get.offAllNamed('/tv-indoor');
@@ -99,7 +111,15 @@ class ConfigController extends GetxController {
     }
     
   }
+  
 
+  void iniciaTimer(int minutos) {
+    print('timer iniciou');
+    Timer(Duration(minutes: minutos), () {
+      reset();
+      Get.offAllNamed('/config');
+    });
+  }
 
   Future<void> refreshData() async {
     try {
@@ -125,13 +145,21 @@ class ConfigController extends GetxController {
       webviewController.getCotacoes();
   }
 
+  Future<void> saveNoticias() async {
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      var noticias = deviceData['noticias'];
+      prefs.setString('noticias', jsonEncode(noticias));
+      NoticiasController noticiasController = Get.find<NoticiasController>();
+      noticiasController.getNoticias();
+
+  }
+
   Future<void> handleMidias(List<dynamic> rawMidias) async {
   
     final Set<String> apiUrls = rawMidias
       .map((m) => m['url'] as String)
       .toSet();
-
-    print(apiUrls);
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -205,33 +233,32 @@ class ConfigController extends GetxController {
 
   }
 
-void showDownloadProgress() {
-  Get.dialog(
-    AlertDialog(
-      title: const Text('Baixando mídias'),
-      content: SizedBox(
-        width: 400,
-        height: 50, // espaço suficiente
-        child: Obx(() {
-          // pega o total agregado
-          final pct = totalProgress;
-          final label = allDone
-            ? 'Concluído!'
-            : 'Baixando mídias: ${(pct * 100).toStringAsFixed(0)}%';
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label),
-              const SizedBox(height: 16),
-              LinearProgressIndicator(value: pct),
-            ],
-          );
-        }),
+  void showDownloadProgress() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Baixando mídias'),
+        content: SizedBox(
+          width: 400,
+          height: 50, // espaço suficiente
+          child: Obx(() {
+            // pega o total agregado
+            final pct = totalProgress;
+            final label = allDone
+              ? 'Concluído!'
+              : 'Baixando mídias: ${(pct * 100).toStringAsFixed(0)}%';
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(value: pct),
+              ],
+            );
+          }),
+        ),
       ),
-    ),
-    barrierDismissible: false,
-  );
-}
-
+      barrierDismissible: false,
+    );
+  }
 
 }

@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NoticiasController extends GetxController{
 
-  String newsUrl = "https://intranet.grupobig.com.br/api/painel/noticias-externas";
-  final RxList<Map<String, dynamic>> news = <Map<String,dynamic>>[].obs;  
+  final RxList<dynamic> news = <dynamic>[].obs; 
+  final RxInt currentIndex = 0.obs; 
   final RxString loadingDots = ''.obs;
+  final RxInt qtdNoticias = 0.obs;
 
   Dio dio = Dio();
 
@@ -16,21 +20,46 @@ class NoticiasController extends GetxController{
     super.onInit();
     animateDots();
     await getNoticias();
-
+    _iniciarCicloDeNoticias();
   }
 
     Future<void> getNoticias() async {
-    try {
-      
-      final response = await dio.get(newsUrl);
-      final List<dynamic> listNews = response.data;
-      news.value = List<Map<String, dynamic>>.from(listNews);
-      // _startAutoScroll();
+      try {
 
-    } on DioException {
-      news.value = [];
-      return;
-    }
+        final prefs = await SharedPreferences.getInstance();
+        final encoded = prefs.getString('noticias');
+        if (encoded != null) {
+          print(jsonDecode(encoded));
+          news.value = jsonDecode(encoded);
+
+        } else {
+          news.clear();
+        }
+
+        qtdNoticias.value = news.length;
+         
+      } catch (e) {
+        print('Erro ao carregar notícias: $e');
+        news.clear();
+        qtdNoticias.value = 0;
+      }
+  }
+
+  void _iniciarCicloDeNoticias() {
+
+    // Laço assíncrono que nunca empilha recursão
+    Future.doWhile(() async {
+
+      await Future.delayed(const Duration(seconds: 20));
+      if (qtdNoticias.value > 0) nextIndex();
+      return true; 
+
+    });
+
+  }
+
+  void nextIndex() {
+    currentIndex.value = (currentIndex.value + 1) % max(1, qtdNoticias.value);
   }
 
   void animateDots(){
