@@ -117,7 +117,11 @@ class SideBar extends StatelessWidget {
                                       child: ListTile(
                                         minTileHeight: 50,
                                         minLeadingWidth: 10,
-                                        leading: Text(
+                                        horizontalTitleGap: 10,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 3),
+                                        leading:  c['code'] == 'BTC'
+                                        ? Icon(Icons.currency_bitcoin, size: 18)
+                                        : Text(
                                           c['symbol'],
                                           style: const TextStyle(fontSize: 18),
                                         ),
@@ -130,7 +134,7 @@ class SideBar extends StatelessWidget {
                                         ),
                                         trailing: Text(
                                           '$arrow ${c['variation'].abs().toStringAsFixed(2)}%',
-                                          style: TextStyle(color: color, fontSize: 12),
+                                          style: TextStyle(color: color, fontSize: 10),
                                         ),
                                         subtitle: Text(
                                           c['updatedAt'],

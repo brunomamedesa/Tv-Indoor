@@ -164,22 +164,25 @@ class ConfigController extends GetxController {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final items =  prefs.getString('midias');
-    final itemsDecoded = jsonDecode(items!) as List;
+    if(items != null) {
+      final itemsDecoded = jsonDecode(items) as List;
+    
+      final toRemove = itemsDecoded
+        .where((m) => !apiUrls.contains(m['url'] as String))
+        .toList();  // <— materializa
+        
+      print('remover: $toRemove');
 
-    final toRemove = itemsDecoded
-      .where((m) => !apiUrls.contains(m['url'] as String))
-      .toList();  // <— materializa
-      
-    print('remover: $toRemove');
+      for (final rm in toRemove) {
+        final url = rm['url'] as String;
+        await _mediaCache.removeFile(url);
+        itemsDecoded.removeWhere((e) => e['url'] == url);
+      }
 
-    for (final rm in toRemove) {
-      final url = rm['url'] as String;
-      await _mediaCache.removeFile(url);
-      itemsDecoded.removeWhere((e) => e['url'] == url);
+      prefs.setString('midias', jsonEncode(itemsDecoded));
+      showDownloadProgress();
     }
-
-    prefs.setString('midias', jsonEncode(itemsDecoded));
-    showDownloadProgress();
+    
     loadingMidias.value = true;
 
     final futures = <Future<void>>[];
