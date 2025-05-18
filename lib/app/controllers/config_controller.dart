@@ -12,6 +12,7 @@ import 'package:mobile_device_identifier/mobile_device_identifier.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/noticias_controller.dart';
+import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/utils/globals.dart';
 import 'package:tv_indoor/app/utils/media_cache_manager.dart';
@@ -113,12 +114,9 @@ class ConfigController extends GetxController {
   }
   
 
-  void iniciaTimer(int minutos) {
-    print('timer iniciou');
-    Timer(Duration(minutes: minutos), () {
-      reset();
-      Get.offAllNamed('/config');
-    });
+  Future<void> iniciaTimer(int minutos) async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('tempo_atualizacao', minutos.toString());
   }
 
   Future<void> refreshData() async {
@@ -127,6 +125,7 @@ class ConfigController extends GetxController {
       isLoading.value = true;
       await fetchData();
       await saveCotacoes();
+      await saveNoticias();
       await handleMidias(deviceData['midias']);
       Get.back();
       isLoading.value = false;
@@ -136,6 +135,8 @@ class ConfigController extends GetxController {
     }
 
   }
+
+
 
   Future<void> saveCotacoes() async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();

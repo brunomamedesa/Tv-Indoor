@@ -13,8 +13,7 @@ class TvIndoorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return 
-    Obx(() {
-      print('midia atual wiget: ${controller.mediaAtual}');
+    Obx(() {      
       return 
         Scaffold(
           backgroundColor: Colors.white,
@@ -30,7 +29,7 @@ class TvIndoorScreen extends StatelessWidget {
                     width: MediaQuery.of(context).size.width,
                     height: MediaQuery.of(context).size.height,
 
-                    key: ValueKey(controller.mediaAtual['file']),
+                    key: ValueKey(controller.midias[controller.currentIndex.value]['file']),
                     decoration: const BoxDecoration(
                       color: Colors.black,
                     ),
@@ -38,11 +37,11 @@ class TvIndoorScreen extends StatelessWidget {
                     children: [
                       if (controller.isLoading.isTrue) ... [
                         const Expanded(child:  Center(child: CircularProgressIndicator(),))
-                      ] else if (controller.existeMidia.isTrue && controller.mediaAtual['tipo'] == 'video' && controller.videoController!.value.isInitialized) ... [
+                      ] else if (controller.existeMidia.isTrue && controller.midias[controller.currentIndex.value]['tipo'] == 'video' && controller.videoController!.value.isInitialized) ... [
                         
                         Expanded(
                           child: AspectRatio(
-                            key: ValueKey(controller.mediaAtual['file']),
+                            key: ValueKey(controller.midias[controller.currentIndex.value]['file']),
                             aspectRatio:
                                 controller.videoController!
                                     .value
@@ -51,15 +50,15 @@ class TvIndoorScreen extends StatelessWidget {
                                 controller.videoController!,),
                           ),
                         )
-                      ] else if (controller.existeMidia.isTrue &&  controller.mediaAtual['tipo'] == 'imagem') ... [
+                      ] else if (controller.existeMidia.isTrue &&  controller.midias[controller.currentIndex.value]['tipo'] == 'imagem') ... [
                         Expanded(
                           child: Container(
-                            key: ValueKey(controller.mediaAtual['file']),
-                            width: double.infinity,
+                            key: ValueKey(controller.midias[controller.currentIndex.value]['file']),
+                            width: double.infinity, 
                             height: double.infinity,
                             decoration: BoxDecoration(
                               image: DecorationImage(
-                                image: FileImage(File(controller.mediaAtual['file'])),
+                                image: FileImage(File(controller.midias[controller.currentIndex.value]['file'])),
                                 fit: BoxFit.cover,
                               ),
                             ),
