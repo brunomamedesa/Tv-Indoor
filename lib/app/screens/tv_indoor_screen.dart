@@ -29,7 +29,7 @@ class TvIndoorScreen extends StatelessWidget {
                     width: MediaQuery.of(context).size.width,
                     height: MediaQuery.of(context).size.height,
 
-                    key: ValueKey(controller.midias[controller.currentIndex.value]['file']),
+                    key: ValueKey(controller.midias.isNotEmpty ? controller.midias[controller.currentIndex.value]['file'] : ''),
                     decoration: const BoxDecoration(
                       color: Colors.black,
                     ),
@@ -41,7 +41,7 @@ class TvIndoorScreen extends StatelessWidget {
                         
                         Expanded(
                           child: AspectRatio(
-                            key: ValueKey(controller.midias[controller.currentIndex.value]['file']),
+                            key: ValueKey(controller.midias.isNotEmpty ? controller.midias[controller.currentIndex.value]['file'] : ''),
                             aspectRatio:
                                 controller.videoController!
                                     .value
@@ -53,7 +53,7 @@ class TvIndoorScreen extends StatelessWidget {
                       ] else if (controller.existeMidia.isTrue &&  controller.midias[controller.currentIndex.value]['tipo'] == 'imagem') ... [
                         Expanded(
                           child: Container(
-                            key: ValueKey(controller.midias[controller.currentIndex.value]['file']),
+                            key: ValueKey(controller.midias.isNotEmpty ? controller.midias[controller.currentIndex.value]['file'] : ''),
                             width: double.infinity, 
                             height: double.infinity,
                             decoration: BoxDecoration(

@@ -39,7 +39,6 @@ class TvIndoorController extends GetxController {
     super.onInit();
     isLoading.value = true;
     getTempoAtualizacao();
-    await getMidias();
     _stopLoop = false;
     _loopFuture = _playLoop();
   }
@@ -50,11 +49,11 @@ class TvIndoorController extends GetxController {
     ConfigController configController = Get.find<ConfigController>();
     await configController.refreshData();
 
-    await _loopFuture;
     currentIndex.value = 0;
 
     await getMidias();
     _stopLoop = false;
+    print('aqui starLoop');
     // reinicia o loop
     _loopFuture = _playLoop();
     getTempoAtualizacao();
@@ -78,7 +77,7 @@ Future<void> _playLoop() async {
       existeMidia.value = false;
       return;
     }
-
+    print('aqui: ${isLoading.value}');
     while (!_stopLoop) {
       final m = midias[currentIndex.value];
       existeMidia.value = true;
@@ -100,12 +99,13 @@ Future<void> _playLoop() async {
   Future<void> getTempoAtualizacao() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final timer = prefs.getString('tempo_atualizacao');
+
     iniciaTimer(int.parse(timer!));
   } 
 
   void iniciaTimer(int minutes) {
-    Timer(Duration(minutes: minutes), () {
-      print('reload');
+    _mediaTimer?.cancel();
+    _mediaTimer = Timer(Duration(minutes: minutes), () {
       reload();
     });
   }

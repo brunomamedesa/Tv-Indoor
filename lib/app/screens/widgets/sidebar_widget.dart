@@ -76,7 +76,7 @@ class SideBar extends StatelessWidget {
                     )
                   ],
                 ),
-                const SizedBox(height: 30,),
+                const SizedBox(height: 20,),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -88,7 +88,7 @@ class SideBar extends StatelessWidget {
                           child: WebViewWidget(controller: controller.webview),
                         ),
                       ),
-                      // SizedBox(height: 20,),
+                      SizedBox(height: 20,),
                       Expanded(
                         flex: 2,
                         child: Row(
