@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
 
 class SideBar extends StatelessWidget {
 
@@ -14,11 +16,10 @@ class SideBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     return Obx(() {
       return Container(
         clipBehavior: Clip.none,
-        width: 240,
+        width: 250,
         height: double.infinity,
         decoration: const BoxDecoration(
           // borderRadius: BorderRadiusDirectional.only(),
@@ -81,16 +82,110 @@ class SideBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        height: 95,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          child: WebViewWidget(controller: controller.webview),
-                        ),
-                      ),
-                      SizedBox(height: 20,),
                       Expanded(
                         flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    // Bloco de ícone, temperatura e descrição
+                                    Builder(builder: (_) {
+                                      final previsao = controller.previsaoTempo;
+                                      final icone = previsao['icone'] as String?;
+                                      final temp = previsao['temperatura_c'] as num?;
+                                      final desc = previsao['descricao'] as String?;
+                                      if (icone == null || temp == null || desc == null) {
+                                        return const Center(
+                                          child: SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              children: [
+                                                Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                                  children: [
+                                                    controller.svgAnimado(icone),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      '${temp.toDouble().toStringAsFixed(1)} °C',
+                                                      style: const TextStyle(
+                                                        fontSize: 25,
+                                                        height: 1,
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  desc,
+                                                  style: const TextStyle(
+                                                    fontSize: 17,
+                                                    letterSpacing: 1,
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  softWrap: true,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }),
+                                    // Bloco de vento
+                                    Expanded(
+                                      child: Builder(builder: (_) {
+                                        final previsao = controller.previsaoTempo;
+                                        final icVent = previsao['icone_vento'] as String?;
+                                        final vento = previsao['vento_kmh'] as num?;
+                                        if (icVent == null || vento == null) {
+                                          // sem dados de vento, esconde o widget
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            controller.svgAnimado(icVent),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '${vento.toDouble().toStringAsFixed(1)} KM/H',
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 5,
                         child: Row(
                           children: [
                             if(controller.loading.isTrue) ... [
@@ -118,9 +213,9 @@ class SideBar extends StatelessWidget {
                                         minTileHeight: 50,
                                         minLeadingWidth: 10,
                                         horizontalTitleGap: 10,
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 3),
-                                        leading:  c['code'] == 'BTC'
-                                        ? Icon(Icons.currency_bitcoin, size: 18)
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                                        leading:  c['symbol'] == null
+                                        ? const Icon(Icons.currency_bitcoin, size: 18)
                                         : Text(
                                           c['symbol'],
                                           style: const TextStyle(fontSize: 18),
@@ -151,13 +246,7 @@ class SideBar extends StatelessWidget {
                           ],
                         )
                       ),
-                      const SizedBox(height: 20,),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Image.asset(
-                          'assets/img-sidebar/image-side.png',
-                        ),
-                      ),
+
                       const SizedBox(height: 30,),
                       Padding(
                         padding: const EdgeInsets.all(8.0),

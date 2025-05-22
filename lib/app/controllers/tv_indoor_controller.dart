@@ -53,7 +53,6 @@ class TvIndoorController extends GetxController {
 
     await getMidias();
     _stopLoop = false;
-    print('aqui starLoop');
     // reinicia o loop
     _loopFuture = _playLoop();
     getTempoAtualizacao();
@@ -77,7 +76,6 @@ Future<void> _playLoop() async {
       existeMidia.value = false;
       return;
     }
-    print('aqui: ${isLoading.value}');
     while (!_stopLoop) {
       final m = midias[currentIndex.value];
       existeMidia.value = true;

@@ -25,8 +25,6 @@ class ConfigController extends GetxController {
   final RxMap<String, dynamic> deviceData = <String, dynamic>{}.obs;
   final RxList<RxMap<String, dynamic>> midiasCache = <RxMap<String, dynamic>>[].obs;
   
-
-
   final baseUrl = kDebugMode ? dotenv.env['BASE_URL_PROD'] : dotenv.env['BASE_URL_PROD'];
   final apiKey = dotenv.env['API_KEY'];
 
@@ -49,6 +47,7 @@ class ConfigController extends GetxController {
   Future<void> onInit() async {
     super.onInit();
     deviceId.value = (await getDeviceId())!;
+    print(deviceId.value);
     await autenticarDispositivo();
   }
 
@@ -68,7 +67,11 @@ class ConfigController extends GetxController {
   }
 
   Future<void> fetchData() async {
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
     try { 
+
       final response = await dio.get(
         '$baseUrl/dispositivo/${deviceId.value}', 
         options: Options(
@@ -81,8 +84,10 @@ class ConfigController extends GetxController {
 
     } on DioException catch (e) {
       print(e);
+      await prefs.clear();
       rethrow;
     }
+
   }
 
   Future<void> autenticarDispositivo() async {
@@ -95,7 +100,7 @@ class ConfigController extends GetxController {
       iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
       await saveCotacoes();
       await saveNoticias();
-
+      await savePrevisaoTempo();
       if(configurado.isTrue) {
         
         await handleMidias(deviceData['midias']);
@@ -144,6 +149,14 @@ class ConfigController extends GetxController {
       prefs.setString('cotacoes', jsonEncode(cotacoes));
       WebviewController webviewController = Get.find<WebviewController>();
       webviewController.getCotacoes();
+  }
+
+  Future<void> savePrevisaoTempo() async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      var cotacoes = deviceData['previsao_tempo'];
+      prefs.setString('previsao_tempo', jsonEncode(cotacoes));
+      WebviewController webviewController = Get.find<WebviewController>();
+      webviewController.getPrevisao();
   }
 
   Future<void> saveNoticias() async {
