@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -54,46 +55,32 @@ class WebviewController extends GetxController {
 
   
 
-Widget svgAnimado(String urlSvg) {
+Widget svgAnimado(String? urlSvg) {
+  // mantém o mesmo tamanho que você usava no WebView
+  const double w = 60, h = 55;
+
   if (urlSvg == null || urlSvg.isEmpty) {
     // placeholder vazio do mesmo tamanho
-    return const SizedBox(width: 0, height: 0);
+    return const SizedBox(width: w, height: h);
   }
-  final html = '''
-  <!DOCTYPE html>
-  <html style="background: transparent;">
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        html, body {
-          margin: 0; padding: 0; overflow: hidden;
-          background: transparent;
-        }
-      </style>
-    </head>
-    <body>
-      <img src="$urlSvg" style="width:100%;height:100%;" />
-    </body>
-  </html>
-  ''';
 
-  final controller = WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    // remove o fundo branco do WebView
-    ..setBackgroundColor(const Color(0x00000000))
-    ..loadRequest(
-      Uri.dataFromString(
-        html,
-        mimeType: 'text/html',
-        encoding: utf8,
+  return SvgPicture.network(
+    urlSvg,
+    width: w,
+    height: h,
+    fit: BoxFit.contain,
+    placeholderBuilder: (context) => const SizedBox(
+      width: w,
+      height: h,
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Colors.white,
+        ),
       ),
-    );
-
-
-  return SizedBox(
-    width: 60,
-    height: 55,
-    child: WebViewWidget(controller: controller),
+    ),
+    // você pode remover `color` se quiser manter as cores originais do SVG
+    color: Colors.white,
   );
 }
 
