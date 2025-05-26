@@ -13,11 +13,7 @@ class WebviewController extends GetxController {
   final RxMap<String, dynamic> previsaoTempo = <String, dynamic>{}.obs;
   final RxBool loading = false.obs;
 
-  final WebViewController webview = WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..loadRequest(Uri.parse(
-      'https://intraneth.grupobig.com.br/api/externo/shockmetais'
-  ));
+
 
 
   @override
@@ -47,7 +43,6 @@ class WebviewController extends GetxController {
 
     if(prevEncoded != null) {
       previsaoTempo.value = jsonDecode(prevEncoded);
-      print(previsaoTempo);
     } 
     loading.value = false;
   }
@@ -57,7 +52,7 @@ class WebviewController extends GetxController {
 
 Widget svgAnimado(String? urlSvg) {
   // mantém o mesmo tamanho que você usava no WebView
-  const double w = 60, h = 55;
+  const double w = 65, h = 60;
 
   if (urlSvg == null || urlSvg.isEmpty) {
     // placeholder vazio do mesmo tamanho
@@ -75,12 +70,12 @@ Widget svgAnimado(String? urlSvg) {
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: Colors.white,
+          color: Colors.blue,
         ),
       ),
     ),
     // você pode remover `color` se quiser manter as cores originais do SVG
-    color: Colors.white,
+    // color: Colors.black,
   );
 }
 

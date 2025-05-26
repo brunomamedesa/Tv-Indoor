@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
+
+import 'package:webview_flutter/webview_flutter.dart';
 
 class TvIndoorScreen extends StatelessWidget {
 
@@ -37,8 +40,22 @@ class TvIndoorScreen extends StatelessWidget {
                     children: [
                       if (controller.isLoading.isTrue) ... [
                         const Expanded(child:  Center(child: CircularProgressIndicator(),))
+                      ] else if (controller.isWebview.isTrue) ... [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            child: Center(
+                              child: SizedBox(
+                                width: 760,   // largura em pontos lógicos
+                                height: double.infinity,
+                                child: WebViewWidget(
+                                  controller: controller.webview,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ] else if (controller.existeMidia.isTrue && controller.midias[controller.currentIndex.value]['tipo'] == 'video' && controller.videoController!.value.isInitialized) ... [
-                        
                         Expanded(
                           child: AspectRatio(
                             key: ValueKey(controller.midias.isNotEmpty ? controller.midias[controller.currentIndex.value]['file'] : ''),

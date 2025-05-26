@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
+import 'package:weather_icons/weather_icons.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -80,110 +81,138 @@ class SideBar extends StatelessWidget {
                 const SizedBox(height: 20,),
                 Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        flex: 2,
+                        flex: 3,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    // Bloco de ícone, temperatura e descrição
-                                    Builder(builder: (_) {
-                                      final previsao = controller.previsaoTempo;
-                                      final icone = previsao['icone'] as String?;
-                                      final temp = previsao['temperatura_c'] as num?;
-                                      final desc = previsao['descricao'] as String?;
-                                      if (icone == null || temp == null || desc == null) {
-                                        return const Center(
-                                          child: SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              children: [
-                                                Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Card(                             
+                            elevation: 3,
+                            clipBehavior: Clip.antiAlias,                           // <- recorta o conteúdo aos cantos do card
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),              // <- ajuste a curvatura que quiser
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.black,
+                                    Colors.grey.shade900,
+                                    Colors.grey.shade800,
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        // Bloco de ícone, temperatura e descrição
+                                        Builder(builder: (_) {
+                                          final previsao = controller.previsaoTempo;
+                                          final icone = previsao['icone'] as String?;
+                                          final temp = previsao['temperatura_c'] as num?;
+                                          final desc = previsao['descricao'] as String?;
+                                          if (icone == null || temp == null || desc == null) {
+                                            return const Center(
+                                              child: SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
                                                   children: [
-                                                    controller.svgAnimado(icone),
-                                                    const SizedBox(width: 8),
+                                                    Row(
+                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                      children: [
+                                                        controller.svgAnimado(icone),
+                                                        const SizedBox(width: 8),
+                                                        Text(
+                                                          '${temp.toDouble().toStringAsFixed(1)} °C',
+                                                          style: const TextStyle(
+                                                            fontSize: 25,
+                                                            height: 1,
+                                                            color: Colors.white,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 4),
                                                     Text(
-                                                      '${temp.toDouble().toStringAsFixed(1)} °C',
+                                                      desc,
                                                       style: const TextStyle(
-                                                        fontSize: 25,
-                                                        height: 1,
+                                                        fontSize: 17,
+                                                        letterSpacing: 1,
                                                         color: Colors.white,
                                                         fontWeight: FontWeight.bold,
                                                       ),
+                                                      textAlign: TextAlign.center,
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      softWrap: true,
                                                     ),
                                                   ],
                                                 ),
-                                                const SizedBox(height: 4),
+                                              ),
+                                            ],
+                                          );
+                                        }),
+                                        // Bloco de vento
+                                        Expanded(
+                                          child: Builder(builder: (_) {
+                                            final previsao = controller.previsaoTempo;
+                                            final icVent = previsao['icone_vento'] as String?;
+                                            final vento = previsao['vento_kmh'] as num?;
+                                            if (icVent == null || vento == null) {
+                                              // sem dados de vento, esconde o widget
+                                              return const SizedBox.shrink();
+                                            }
+                                            return Row(
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const BoxedIcon(
+                                                  WeatherIcons.strong_wind,  // ícone de vento
+                                                  size: 28,
+                                                  color: Colors.white,
+                                                ),
+                                                const SizedBox(width: 8),
                                                 Text(
-                                                  desc,
+                                                  '${vento.toDouble().toStringAsFixed(1)} KM/H',
                                                   style: const TextStyle(
-                                                    fontSize: 17,
-                                                    letterSpacing: 1,
+                                                    fontSize: 20,
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.bold,
                                                   ),
-                                                  textAlign: TextAlign.center,
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  softWrap: true,
                                                 ),
                                               ],
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    // Bloco de vento
-                                    Expanded(
-                                      child: Builder(builder: (_) {
-                                        final previsao = controller.previsaoTempo;
-                                        final icVent = previsao['icone_vento'] as String?;
-                                        final vento = previsao['vento_kmh'] as num?;
-                                        if (icVent == null || vento == null) {
-                                          // sem dados de vento, esconde o widget
-                                          return const SizedBox.shrink();
-                                        }
-                                        return Row(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            controller.svgAnimado(icVent),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              '${vento.toDouble().toStringAsFixed(1)} KM/H',
-                                              style: const TextStyle(
-                                                fontSize: 20,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      }),
+                                            );
+                                          }),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              )
-                            ],
+                                  )
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(height: 50,),
                       Expanded(
                         flex: 5,
                         child: Row(

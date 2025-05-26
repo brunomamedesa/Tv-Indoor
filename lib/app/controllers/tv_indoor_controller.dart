@@ -8,7 +8,9 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
+import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:video_player/video_player.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 
 
@@ -25,14 +27,20 @@ class TvIndoorController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxMap<String, dynamic> mediaAtual = <String, dynamic>{}.obs;
   final RxBool existeMidia = false.obs;
+  final RxBool isWebview = false.obs;
 
   Timer? _mediaTimer;
   Dio dio = Dio();
   bool _stopLoop = false;
   Future<void>? _loopFuture;
 
-
   VideoPlayerController? videoController;
+
+  final WebViewController webview = WebViewController()
+    ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    ..loadRequest(Uri.parse(
+      'https://intraneth.grupobig.com.br/api/externo/shockmetais'
+  ));
   
   @override
   Future<void> onInit() async {
@@ -71,24 +79,40 @@ class TvIndoorController extends GetxController {
 
 Future<void> _playLoop() async {
     await getMidias();
+
     if (midias.isEmpty) {
       isLoading.value = false;
       existeMidia.value = false;
       return;
     }
+
+    isWebview.value = true;
+    isLoading.value = false;
+    await Future.delayed(const Duration(seconds: 30));
+    isWebview.value = false;
+
+  
     while (!_stopLoop) {
       final m = midias[currentIndex.value];
       existeMidia.value = true;
       isLoading.value = true;
 
       if (m['tipo'] == 'video' && m['file'] != null) {
+
         await _playVideo(File(m['file'] as String));
+
       } else {
         // imagem
         isLoading.value = false;
         await Future.delayed(const Duration(seconds: 20));
       }
 
+      if (currentIndex.value == midias.length - 1) {
+        isWebview.value = true;
+        isLoading.value = false;
+        await Future.delayed(const Duration(seconds: 30));
+        isWebview.value = false;
+      }
       // próximo índice
       currentIndex.value = (currentIndex.value + 1) % midias.length;
     }
@@ -111,13 +135,12 @@ Future<void> _playLoop() async {
   Future<void> _playVideo(File file) async {
     // limpa o anterior
     if (videoController != null) {
-      await videoController!.pause();
-      videoController!.removeListener(_onError);
       await videoController!.dispose();
     }
 
     videoController = VideoPlayerController.file(file)
       ..addListener(_onError);
+
     await videoController!.initialize();
     isLoading.value = false;
     await videoController!.play();

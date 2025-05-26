@@ -22,6 +22,7 @@ dependencies:
   flutter_cache_manager: ^3.4.1
   flutter_launcher_icons: ^0.14.3
   flutter_svg: ^2.1.0
+  weather_icons: ^3.0.0
 
 dev_dependencies:
   flutter_test:
