@@ -39,23 +39,28 @@ class TvIndoorScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       if (controller.isLoading.isTrue) ... [
-                        const Expanded(child:  Center(child: CircularProgressIndicator(),))
-                      ] else if (controller.isWebview.isTrue) ... [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            child: Center(
-                              child: SizedBox(
-                                width: 760,   // largura em pontos lógicos
-                                height: double.infinity,
-                                child: WebViewWidget(
-                                  controller: controller.webview,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ] else if (controller.existeMidia.isTrue && controller.midias[controller.currentIndex.value]['tipo'] == 'video' && controller.videoController!.value.isInitialized) ... [
+                        const Expanded(child:  Center(child: CircularProgressIndicator(),)),
+                      ]
+                      // else if (controller.isWebview.isTrue) ... [
+                      //   Expanded(
+                      //     child: Padding(
+                      //       padding: const EdgeInsets.symmetric(vertical: 15),
+                      //       child: Center(
+                      //         child: SizedBox(
+                      //           width: 760,   // largura em pontos lógicos
+                      //           height: double.infinity,
+                      //           child: WebViewWidget(
+                      //             controller: controller.webview,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
+                       else if (controller.existeMidia.isTrue &&
+                             controller.midias[controller.currentIndex.value]['tipo'] == 'video' &&
+                             controller.videoReady.isTrue &&
+                             controller.videoController != null &&
+                             controller.videoController!.value.isInitialized) ... [
                         Expanded(
                           child: AspectRatio(
                             key: ValueKey(controller.midias.isNotEmpty ? controller.midias[controller.currentIndex.value]['file'] : ''),

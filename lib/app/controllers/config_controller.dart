@@ -129,6 +129,8 @@ class ConfigController extends GetxController {
 
       isLoading.value = true;
       await fetchData();
+      configurado.value = deviceData['configurado']; 
+      iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
       await saveCotacoes();
       await saveNoticias();
       await handleMidias(deviceData['midias']);
