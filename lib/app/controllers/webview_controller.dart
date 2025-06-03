@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -12,7 +13,7 @@ class WebviewController extends GetxController {
   final RxList<dynamic> cotacoes = <dynamic>[].obs;
   final RxMap<String, dynamic> previsaoTempo = <String, dynamic>{}.obs;
   final RxBool loading = false.obs;
-
+  final RxString versao = ''.obs;
 
 
 
@@ -21,6 +22,7 @@ class WebviewController extends GetxController {
     super.onInit();
     await getCotacoes();
     await getPrevisao();
+    await getAppVersion();
   }
 
   Future<void> getCotacoes() async {
@@ -47,6 +49,11 @@ class WebviewController extends GetxController {
     loading.value = false;
   }
 
+  Future<void> getAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final version = packageInfo.version;       // ex: "1.2.3"
+    versao.value = version;
+  }
 
   
 

@@ -10,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:mobile_device_identifier/mobile_device_identifier.dart';
 import 'package:dio/dio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/noticias_controller.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
@@ -24,6 +25,7 @@ class ConfigController extends GetxController {
   final RxBool loadingMidias = false.obs;
   final RxMap<String, dynamic> deviceData = <String, dynamic>{}.obs;
   final RxList<RxMap<String, dynamic>> midiasCache = <RxMap<String, dynamic>>[].obs;
+  final RxString versao = ''.obs;
   
   final baseUrl = kDebugMode ? dotenv.env['BASE_URL_PROD'] : dotenv.env['BASE_URL_PROD'];
   final apiKey = dotenv.env['API_KEY'];
@@ -251,6 +253,7 @@ class ConfigController extends GetxController {
     return;
 
   }
+
 
   void showDownloadProgress() {
     Get.dialog(

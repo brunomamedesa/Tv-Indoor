@@ -70,7 +70,7 @@ class Noticias extends StatelessWidget {
                           ],
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(left: 10, bottom: 23),
+                          padding: const EdgeInsets.only(left: 11, bottom: 35),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -138,11 +138,11 @@ class Noticias extends StatelessWidget {
               ],
             ),
             Positioned(
-              top: 40,      // ajuste a posição vertical
+              top: 30,      // ajuste a posição vertical
               left: 133,   // ajuste a posição horizontal
               child: Container(
                 width: 850,
-                height: 70,
+                height: 80,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -152,17 +152,21 @@ class Noticias extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      controller.news[controller.currentIndex.value]['titulo'],
+                      'Bem-vindo ao nosso portal de notícias: acompanhe a',
+                      // controller.news[controller.currentIndex.value]['titulo'],
                       // textAlign: TextAlign.start,
+
                       style: const TextStyle(
                         color: Color.fromRGBO(66, 97, 76, 1),
-                        fontSize: 26,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         height: 0
                       ),
+                      softWrap: false,
                     ),
                     Text(
-                      controller.news[controller.currentIndex.value]['noticia'],
+                      'Moradores de Vila Nova inauguram horta comunitária no centro da cidade nesta sexta; iniciativa promete incentivar hábitos saudáveis, fortalecer laços entre vizinhos e promover conscientização ambiental. O projeto conta com doações de sementes, workshops de jardinagem, palestras sobre compostagem e oficinas gratuitas para todas as idades, criando um espaço de convivência colabor',
+                      // controller.news[controller.currentIndex.value]['noticia'],
                       softWrap: true,
                       style: TextStyle(
                         color: Colors.grey.shade600,

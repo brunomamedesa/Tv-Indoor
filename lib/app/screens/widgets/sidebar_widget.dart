@@ -75,7 +75,20 @@ class SideBar extends StatelessWidget {
                           height: 1.0,
                         ),
                       ),
-                    )
+                    ),
+                    Transform.translate(
+                      offset: const Offset(85, -5), // x = 12 para alinhar o left, y = -6 para subir
+                      child: Text(
+                        'V${controller.versao.value}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w300,
+                          fontSize: 12,
+                          
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20,),
