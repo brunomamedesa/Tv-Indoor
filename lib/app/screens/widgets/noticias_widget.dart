@@ -152,10 +152,7 @@ class Noticias extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      'Bem-vindo ao nosso portal de notícias: acompanhe a',
-                      // controller.news[controller.currentIndex.value]['titulo'],
-                      // textAlign: TextAlign.start,
-
+                      controller.news[controller.currentIndex.value]['titulo'],
                       style: const TextStyle(
                         color: Color.fromRGBO(66, 97, 76, 1),
                         fontSize: 20,
@@ -165,8 +162,7 @@ class Noticias extends StatelessWidget {
                       softWrap: false,
                     ),
                     Text(
-                      'Moradores de Vila Nova inauguram horta comunitária no centro da cidade nesta sexta; iniciativa promete incentivar hábitos saudáveis, fortalecer laços entre vizinhos e promover conscientização ambiental. O projeto conta com doações de sementes, workshops de jardinagem, palestras sobre compostagem e oficinas gratuitas para todas as idades, criando um espaço de convivência colabor',
-                      // controller.news[controller.currentIndex.value]['noticia'],
+                      controller.news[controller.currentIndex.value]['noticia'],
                       softWrap: true,
                       style: TextStyle(
                         color: Colors.grey.shade600,
