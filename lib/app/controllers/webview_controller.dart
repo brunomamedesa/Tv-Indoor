@@ -12,6 +12,7 @@ class WebviewController extends GetxController {
 
   final RxList<dynamic> cotacoes = <dynamic>[].obs;
   final RxMap<String, dynamic> previsaoTempo = <String, dynamic>{}.obs;
+  final RxMap<String, dynamic> cotacaoMetais = <String, dynamic>{}.obs;
   final RxBool loading = false.obs;
   final RxString versao = ''.obs;
 
@@ -21,6 +22,7 @@ class WebviewController extends GetxController {
   Future<void> onInit() async {
     super.onInit();
     await getCotacoes();
+    await getMetais();
     await getPrevisao();
     await getAppVersion();
   }
@@ -42,9 +44,20 @@ class WebviewController extends GetxController {
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     var prevEncoded = prefs.getString('previsao_tempo');
-
+    print('previsao: $prevEncoded');
     if(prevEncoded != null) {
-      previsaoTempo.value = jsonDecode(prevEncoded);
+      previsaoTempo.value = jsonDecode(prevEncoded) ?? {};
+    } 
+    loading.value = false;
+  }
+
+  Future<void> getMetais() async {
+    loading.value = true;
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    var prevEncoded = prefs.getString('cotacao_metais');
+    if(prevEncoded != null) {
+      cotacaoMetais.value = jsonDecode(prevEncoded) ?? {};
     } 
     loading.value = false;
   }

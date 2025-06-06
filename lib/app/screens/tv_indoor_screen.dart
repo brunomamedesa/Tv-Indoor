@@ -41,21 +41,6 @@ class TvIndoorScreen extends StatelessWidget {
                       if (controller.isLoading.isTrue) ... [
                         const Expanded(child:  Center(child: CircularProgressIndicator(),)),
                       ]
-                      // else if (controller.isWebview.isTrue) ... [
-                      //   Expanded(
-                      //     child: Padding(
-                      //       padding: const EdgeInsets.symmetric(vertical: 15),
-                      //       child: Center(
-                      //         child: SizedBox(
-                      //           width: 760,   // largura em pontos lógicos
-                      //           height: double.infinity,
-                      //           child: WebViewWidget(
-                      //             controller: controller.webview,
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ),
                        else if (controller.existeMidia.isTrue &&
                              controller.midias[controller.currentIndex.value]['tipo'] == 'video' &&
                              controller.videoReady.isTrue &&

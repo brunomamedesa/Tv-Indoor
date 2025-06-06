@@ -65,45 +65,79 @@ class TvIndoorController extends GetxController {
 
   Future<void> reload() async {
     isLoading.value = true;
-    // 1) sinalize que deve parar imediatamente
-    _stopLoop.value = true;
 
-    // 2) cancele timers ou pause o vídeo
-    _imageTimer?.cancel();
-    if (videoController?.value.isPlaying ?? false) {
-      await videoController!.pause();
+    // ── 1. Checa rapidamente se há mídias novas ─────────────────────────
+    final cfg = Get.find<ConfigController>();
+    await cfg.fetchData();  
+    if (cfg.deviceData.isEmpty) {
+      getTempoAtualizacao();
+      isLoading.value = false;
+      return;
+    }
+                           // GET leve
+    final bool midiasMudaram = await cfg.verificarMidiasAlteradas();
+    await cfg.saveCotacoes();
+    await cfg.saveNoticias();
+    await cfg.savePrevisaoTempo();
+    await cfg.saveCotMetais();
+
+    // ── 2A. NÃO mudou nada  →  simplesmente continua ────────────────────
+    if (!midiasMudaram) {
+      // Se, por acaso, um vídeo estava pausado, retomamos
+      if (videoController?.value.isInitialized == true &&
+          !videoController!.value.isPlaying) {
+        await videoController!.play();
+      }
+      getTempoAtualizacao();   // agenda próximo reload
+      isLoading.value = false;
+      return;                  // sai sem mexer em timers ou índices
+    }
+    // ── 2B. MUDOU → precisamos atualizar ────────────────────────────────
+    _stopLoop.value = true;          // bloqueia callbacks de imagem/vídeo
+    _imageTimer?.cancel();           // cancela timer de imagem, se houver
+    _imageTimer = null;
+
+    if (videoController != null) {
+      await videoController!.pause();     // pausa o vídeo atual
+      await videoController!.dispose();   // descarta controller + listeners
+      videoController = null;
+      videoReady.value = false;
     }
 
-    // 3) Atualize dados / recarregue SharedPreferences / etc
-    ConfigController configController = Get.find<ConfigController>();
-    await configController.refreshData();
+    // ── 3. Baixa e grava novas mídias (mostra o diálogo de progresso) ───
+    await cfg.handleMidias(cfg.deviceData['midias']);   // aguarda download
 
-    // 4) Resete índice e recarregue lista de mídias
-    currentIndex.value = 0;
+    // ── 4. Recarrega lista salva no SharedPreferences ───────────────────
     await getMidias();
+    currentIndex.value = 0;
 
-    // 5) Agora, volte a permitir loop e inicie a reprodução de novo
+    // ── 5. Libera o loop e começa do índice 0 ───────────────────────────
     _stopLoop.value = false;
     if (midias.isNotEmpty) {
       existeMidia.value = true;
-      _playMediaNoIndice(currentIndex.value);
+      _playMediaNoIndice(0);
     } else {
       existeMidia.value = false;
       isLoading.value = false;
     }
 
-    getTempoAtualizacao();
+    getTempoAtualizacao();   // agenda próximo reload
     isLoading.value = false;
   }
 
+
   Future<void> getMidias() async {
-
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final midiaEncode =  prefs.getString('midias');
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString('midias');
+    if (json == null) {
+      midias.clear();
+      return;
+    }
     midias.assignAll(
-      (jsonDecode(midiaEncode!) as List).map((e) => Map<String, dynamic>.from(e).obs).toList()
+      (jsonDecode(json) as List)
+          .map((e) => Map<String, dynamic>.from(e).obs)
+          .toList(),
     );
-
   }
 
   Future<void> _playMediaNoIndice(int idx) async {
@@ -122,7 +156,6 @@ class TvIndoorController extends GetxController {
 
     isLoading.value = true;
     videoReady.value = false;
-    print('[playMedia] vai tocar índice ${currentIndex.value}: $m');
 
     if (m['tipo'] == 'video' && m['file'] != null) {
       // → Tocar vídeo
@@ -141,36 +174,23 @@ class TvIndoorController extends GetxController {
       videoReady.value = true;
       await videoController!.play();
       videoController!.setVolume(1);
+      await Future.delayed(videoController!.value.duration);
 
-      // Agora registramos um listener simples para detectar "término do vídeo"
-      videoController!.addListener(() {
-        final valor = videoController!.value;
-        // Se a posição atual for >= duração e não estiver tocando, é porque acabou
-        if (valor.position >= valor.duration && !valor.isPlaying) {
-          // Se ainda não foi chamado stopLoop, podemos agendar a próxima mídia
-          if (!_stopLoop.value) {
-            // Avança índice e chama recursivamente
-            final int proximo = (currentIndex.value + 1) % midias.length;
-            _playMediaNoIndice(proximo);
-          }
-        }
-      });
+      if (!_stopLoop.value) {
+        final int proximo = (currentIndex.value + 1) % midias.length;
+        _playMediaNoIndice(proximo);
+      }
+
 
     } else {
       // → Mostrar imagem por 20 segundos
       isLoading.value = false;
+      await Future.delayed(const Duration(seconds: 20));
+      if (!_stopLoop.value) {
+        final int proximo = (currentIndex.value + 1) % midias.length;
+        _playMediaNoIndice(proximo);
+      }
 
-      // Cancela qualquer timer anterior, só por segurança
-      _imageTimer?.cancel();
-
-      // Agenda um Timer para disparar a próxima mídia em 20s
-      _imageTimer = Timer(const Duration(seconds: 20), () {
-        // Se não foi pedido para parar, avança para próxima
-        if (!_stopLoop.value) {
-          final int proximo = (currentIndex.value + 1) % midias.length;
-          _playMediaNoIndice(proximo);
-        }
-      });
     }
   }
 

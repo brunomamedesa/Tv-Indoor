@@ -49,7 +49,6 @@ class ConfigController extends GetxController {
   Future<void> onInit() async {
     super.onInit();
     deviceId.value = (await getDeviceId())!;
-    print(deviceId.value);
     await autenticarDispositivo();
   }
 
@@ -68,30 +67,32 @@ class ConfigController extends GetxController {
     return await MobileDeviceIdentifier().getDeviceId(); 
   }
 
-  Future<void> fetchData() async {
+Future<void> fetchData() async {
+  final prefs = await SharedPreferences.getInstance();
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+  try {
+    final response = await dio.get(
+      '$baseUrl/dispositivo/${deviceId.value}',
+      options: Options(
+        headers: {'Authorization': 'Bearer $apiKey'},
+        // status ≥ 500 não lança exceção ―‐ cuidaremos abaixo
+        validateStatus: (code) => code != null && code < 500,
+      ),
+    );
 
-    try { 
-
-      final response = await dio.get(
-        '$baseUrl/dispositivo/${deviceId.value}', 
-        options: Options(
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-        })
-      );
-
-      deviceData.value = response.data;
-
-    } on DioException catch (e) {
-      print(e);
-      await prefs.clear();
-      rethrow;
+    if (response.statusCode == 200 && response.data != null) {
+      deviceData.value = response.data;          // ✅ ok
+    } else {
+      // resposta 404/500 ou corpo nulo
+      deviceData.clear();                        // 👈 nada novo
+      debugPrint('⚠️ Backend status ${response.statusCode}');
     }
-
+  } on DioException catch (e) {
+    // timeout, perda de rede, etc. → só registra, sem rethrow
+    debugPrint('⚠️ Erro de rede: $e');
+    deviceData.clear();                          // mantém cache antigo
   }
-
+}
   Future<void> autenticarDispositivo() async {
     try {
 
@@ -103,6 +104,7 @@ class ConfigController extends GetxController {
       await saveCotacoes();
       await saveNoticias();
       await savePrevisaoTempo();
+      await saveCotMetais();
       if(configurado.isTrue) {
         
         await handleMidias(deviceData['midias']);
@@ -122,25 +124,32 @@ class ConfigController extends GetxController {
   
 
   Future<void> iniciaTimer(int minutos) async {
+    print('print minutos: $minutos');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString('tempo_atualizacao', minutos.toString());
   }
 
-  Future<void> refreshData() async {
+  Future<bool> refreshData() async {
     try {
 
       isLoading.value = true;
       await fetchData();
+      final existeMidiasDiferentes = await verificarMidiasAlteradas();
+
       configurado.value = deviceData['configurado']; 
       iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
       await saveCotacoes();
       await saveNoticias();
-      await handleMidias(deviceData['midias']);
-      Get.back();
+      if(existeMidiasDiferentes) {
+        await handleMidias(deviceData['midias']);
+        Get.back();
+      }
       isLoading.value = false;
+      return existeMidiasDiferentes;
 
     } catch (e) {
       print(e);
+      return false;
     }
 
   }
@@ -150,6 +159,7 @@ class ConfigController extends GetxController {
   Future<void> saveCotacoes() async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var cotacoes = deviceData['cotacoes'];
+      print('print cotacoes: $cotacoes');
       prefs.setString('cotacoes', jsonEncode(cotacoes));
       WebviewController webviewController = Get.find<WebviewController>();
       webviewController.getCotacoes();
@@ -158,9 +168,18 @@ class ConfigController extends GetxController {
   Future<void> savePrevisaoTempo() async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var cotacoes = deviceData['previsao_tempo'];
+      print('print cotacoes $cotacoes');
       prefs.setString('previsao_tempo', jsonEncode(cotacoes));
       WebviewController webviewController = Get.find<WebviewController>();
       webviewController.getPrevisao();
+  }
+
+  Future<void> saveCotMetais() async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      var metais = deviceData['cotacao_metais'];
+      prefs.setString('cotacao_metais', jsonEncode(metais));
+      WebviewController webviewController = Get.find<WebviewController>();
+      webviewController.getMetais();
   }
 
   Future<void> saveNoticias() async {
@@ -174,84 +193,190 @@ class ConfigController extends GetxController {
   }
 
   Future<void> handleMidias(List<dynamic> rawMidias) async {
-  
-    final Set<String> apiUrls = rawMidias
-      .map((m) => m['url'] as String)
-      .toSet();
+    // (A) ──────────────────────────────────────────────────────────────
+    // 1. Zere a lista em memória para não acumular duplicatas
+    midiasCache.clear();
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    // 2. Limpe (em disco) arquivos que não estão mais na API ───────────
+    final apiUrls = rawMidias.map((m) => m['url'] as String).toSet();
+    final prefs   = await SharedPreferences.getInstance();
+    final stored  = prefs.getString('midias');
+    if (stored != null) {
+      final storedList = jsonDecode(stored) as List;
+      final toRemove   = storedList
+          .where((m) => !apiUrls.contains(m['url'] as String))
+          .toList();
 
-    final items =  prefs.getString('midias');
-    if(items != null) {
-      final itemsDecoded = jsonDecode(items) as List;
-    
-      final toRemove = itemsDecoded
-        .where((m) => !apiUrls.contains(m['url'] as String))
-        .toList();  // <— materializa
-        
-      print('remover: $toRemove');
-
+      print(toRemove);
       for (final rm in toRemove) {
-        final url = rm['url'] as String;
-        await _mediaCache.removeFile(url);
-        itemsDecoded.removeWhere((e) => e['url'] == url);
+        await _mediaCache.removeFile(rm['url'] as String);
       }
-
-      prefs.setString('midias', jsonEncode(itemsDecoded));
-      showDownloadProgress();
     }
-    
+
+    // 3. Mostre o diálogo de progresso antes de começar a baixar ───────
+    showDownloadProgress();
     loadingMidias.value = true;
 
-    final futures = <Future<void>>[];
+    // (B) ──────────────────────────────────────────────────────────────
+    // 4. Baixe as mídias com barra de progresso
+    final downloadFutures = <Future<void>>[];
 
-    for (var m in rawMidias) {
-      final url   = m['url']   as String;
-      final tipo  = m['tipo']  as String;
-
-      // 1) Cria o RxMap e adiciona na RxList
+    for (final m in rawMidias) {
       final entrada = <String, dynamic>{
-        'tipo': tipo,
-        'url': url,
-        'file': null,
+        'tipo'    : m['tipo'],
+        'url'     : m['url'],
+        'file'    : null,
         'progress': 0.0,
       }.obs;
-
       midiasCache.add(entrada);
 
-      // cria um Completer que vamos completar no evento FileInfo
-      final completer = Completer<void>();
-      futures.add(completer.future);
+      final c = Completer<void>();
+      downloadFutures.add(c.future);
 
-      // 2) Pega o stream de download com progresso
-      final stream = _mediaCache.getFileStream(url, withProgress: true);
-
-      // 3) Escuta o stream
-
-      stream.listen((resp) {
+      _mediaCache.getFileStream(m['url'], withProgress: true).listen((resp) {
         if (resp is DownloadProgress) {
           final pct = resp.totalSize != null
               ? resp.downloaded / resp.totalSize!
               : 0.0;
           entrada['progress'] = pct;
           entrada.refresh();
-
-        } else if (resp is FileInfo) 
-        {
-          entrada['file'] = resp.file.path;
+        } else if (resp is FileInfo) {
+          entrada['file']     = resp.file.path;
           entrada['progress'] = 1.0;
           entrada.refresh();
-          completer.complete();  
-                  // sinaliza que esse download acabou
+          c.complete();
         }
       });
     }
 
-    await Future.wait(futures);
-    prefs.setString('midias', jsonEncode(midiasCache));
-    loadingMidias.value = false;
-    return;
+    await Future.wait(downloadFutures);
 
+    // (C) ──────────────────────────────────────────────────────────────
+    // 5. Gere lista "limpa" (sem progress, sem Rx) p/ gravar no prefs
+    final listaParaPrefs = [
+      for (final rx in midiasCache)
+        {
+          'tipo': rx['tipo'],
+          'url' : rx['url'],
+          'file': rx['file'],     // path definitivo
+        }
+    ];
+    await prefs.setString('midias', jsonEncode(listaParaPrefs));
+
+    // 6. Feche diálogo e sinalize fim
+    loadingMidias.value = false;
+    Get.back();                       // fecha o AlertDialog de download
+  }
+
+  // Future<void> handleMidias(List<dynamic> rawMidias) async {
+
+  //   midiasCache.clear();
+  //   final Set<String> apiUrls = rawMidias
+  //     .map((m) => m['url'] as String)
+  //     .toSet();
+
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  //   final items =  prefs.getString('midias');
+  //   if(items != null) {
+  //     final itemsDecoded = jsonDecode(items) as List;
+    
+  //     final toRemove = itemsDecoded
+  //       .where((m) => !apiUrls.contains(m['url'] as String))
+  //       .toList();  // <— materializa
+        
+  //     print('remover: $toRemove');
+
+  //     for (final rm in toRemove) {
+  //       final url = rm['url'] as String;
+  //       await _mediaCache.removeFile(url);
+  //       itemsDecoded.removeWhere((e) => e['url'] == url);
+  //     }
+
+  //     prefs.setString('midias', jsonEncode(itemsDecoded));
+  //     showDownloadProgress();
+  //   }
+    
+  //   loadingMidias.value = true;
+
+  //   final futures = <Future<void>>[];
+
+  //   for (var m in rawMidias) {
+  //     final url   = m['url']   as String;
+  //     final tipo  = m['tipo']  as String;
+
+  //     // 1) Cria o RxMap e adiciona na RxList
+  //     final entrada = <String, dynamic>{
+  //       'tipo': tipo,
+  //       'url': url,
+  //       'file': null,
+  //       'progress': 0.0,
+  //     }.obs;
+
+  //     midiasCache.add(entrada);
+
+  //     // cria um Completer que vamos completar no evento FileInfo
+  //     final completer = Completer<void>();
+  //     futures.add(completer.future);
+
+  //     // 2) Pega o stream de download com progresso
+  //     final stream = _mediaCache.getFileStream(url, withProgress: true);
+
+  //     // 3) Escuta o stream
+
+  //     stream.listen((resp) {
+  //       if (resp is DownloadProgress) {
+  //         final pct = resp.totalSize != null
+  //             ? resp.downloaded / resp.totalSize!
+  //             : 0.0;
+  //         entrada['progress'] = pct;
+  //         entrada.refresh();
+
+  //       } else if (resp is FileInfo) 
+  //       {
+  //         entrada['file'] = resp.file.path;
+  //         entrada['progress'] = 1.0;
+  //         entrada.refresh();
+  //         completer.complete();  
+  //                 // sinaliza que esse download acabou
+  //       }
+  //     });
+  //   }
+
+  //   await Future.wait(futures);
+  //   prefs.setString('midias', jsonEncode(midiasCache));
+  //   loadingMidias.value = false;
+  //   return;
+
+  // }
+
+  //SEMPRE QUE CHAMAR, CERTIFICAR DE CHAMAR FETCH DATA ANTES
+  Future<bool> verificarMidiasAlteradas() async {
+
+    // 2) Extrai lista de URLs da API
+    final List<dynamic> apiMidias = deviceData['midias'] as List<dynamic>;
+    final Set<String> apiUrls = apiMidias
+        .map((m) => m['url'] as String)
+        .toSet();
+
+    // 3) Busca o JSON armazenado em SharedPreferences
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? storedJson = prefs.getString('midias');
+
+    // Se não houver nada armazenado, considera alteração se a API retornar alguma mídia
+    if (storedJson == null) {
+      return apiUrls.isNotEmpty;
+    }
+
+    // 4) Decodifica o JSON salvo e extrai as URLs
+    final List<dynamic> storedList = jsonDecode(storedJson) as List<dynamic>;
+    final Set<String> storedUrls = storedList
+        .map((m) => (m as Map<String, dynamic>)['url'] as String)
+        .toSet();
+
+    // 5) Compara os dois conjuntos de URLs
+    // setEquals vem de 'package:flutter/foundation.dart'
+    return !setEquals(apiUrls, storedUrls);
   }
 
 

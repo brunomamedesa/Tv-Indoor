@@ -29,7 +29,6 @@ class NoticiasController extends GetxController{
         final prefs = await SharedPreferences.getInstance();
         final encoded = prefs.getString('noticias');
         if (encoded != null) {
-          print(jsonDecode(encoded));
           news.value = jsonDecode(encoded);
 
         } else {
