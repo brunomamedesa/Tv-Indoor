@@ -72,7 +72,7 @@ class WebviewController extends GetxController {
 
 Widget svgAnimado(String? urlSvg) {
   // mantém o mesmo tamanho que você usava no WebView
-  const double w = 65, h = 60;
+  const double w = 55, h = 45;
 
   if (urlSvg == null || urlSvg.isEmpty) {
     // placeholder vazio do mesmo tamanho

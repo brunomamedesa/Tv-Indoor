@@ -55,14 +55,14 @@ class SideBar extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: double.infinity,
-                        height: 150,
+                        height: 100,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Card(                             
                             elevation: 3,
-                            clipBehavior: Clip.antiAlias,                           // <- recorta o conteúdo aos cantos do card
+                            clipBehavior: Clip.antiAlias,                          
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),              // <- ajuste a curvatura que quiser
+                              borderRadius: BorderRadius.circular(8),            
                             ),
                             child: Container(
                               decoration: BoxDecoration(
@@ -120,7 +120,7 @@ class SideBar extends StatelessWidget {
                                                           Text(
                                                             '${temp.toDouble().toStringAsFixed(1)} °C',
                                                             style: const TextStyle(
-                                                              fontSize: 25,
+                                                              fontSize: 20,
                                                               height: 1,
                                                               color: Colors.white,
                                                               fontWeight: FontWeight.bold,
@@ -128,11 +128,11 @@ class SideBar extends StatelessWidget {
                                                           ),
                                                         ],
                                                       ),
-                                                      const SizedBox(height: 4),
+                                                      // const SizedBox(height: 4),
                                                       Text(
                                                         desc,
                                                         style: const TextStyle(
-                                                          fontSize: 17,
+                                                          fontSize: 14,
                                                           letterSpacing: 1,
                                                           color: Colors.white,
                                                           fontWeight: FontWeight.bold,
@@ -164,14 +164,14 @@ class SideBar extends StatelessWidget {
                                                 children: [
                                                   const BoxedIcon(
                                                     WeatherIcons.strong_wind,  // ícone de vento
-                                                    size: 28,
+                                                    size: 20,
                                                     color: Colors.white,
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
                                                     '${vento.toDouble().toStringAsFixed(1)} KM/H',
                                                     style: const TextStyle(
-                                                      fontSize: 20,
+                                                      fontSize: 15,
                                                       color: Colors.white,
                                                       fontWeight: FontWeight.bold,
                                                     ),
@@ -190,12 +190,12 @@ class SideBar extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40,),
+                      const SizedBox(height: 30,),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: SizedBox(
                           width: double.infinity,
-                          height: 100,
+                          height: 80,
                           child: Row(
                             children: [
                               if(controller.loading.isTrue) ... [
