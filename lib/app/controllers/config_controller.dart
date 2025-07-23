@@ -10,10 +10,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:mobile_device_identifier/mobile_device_identifier.dart';
 import 'package:dio/dio.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/noticias_controller.dart';
-import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/utils/globals.dart';
 import 'package:tv_indoor/app/utils/media_cache_manager.dart';
@@ -68,8 +66,6 @@ class ConfigController extends GetxController {
   }
 
 Future<void> fetchData() async {
-  final prefs = await SharedPreferences.getInstance();
-
   try {
     final response = await dio.get(
       '$baseUrl/dispositivo/${deviceId.value}',
@@ -198,13 +194,14 @@ Future<void> fetchData() async {
     midiasCache.clear();
 
     // 2. Limpe (em disco) arquivos que não estão mais na API ───────────
+    // Só remove arquivos de vídeos e imagens, URLs não são armazenadas em cache
     final apiUrls = rawMidias.map((m) => m['url'] as String).toSet();
     final prefs   = await SharedPreferences.getInstance();
     final stored  = prefs.getString('midias');
     if (stored != null) {
       final storedList = jsonDecode(stored) as List;
       final toRemove   = storedList
-          .where((m) => !apiUrls.contains(m['url'] as String))
+          .where((m) => !apiUrls.contains(m['url'] as String) && (m['tipo'] == 'video' || m['tipo'] == 'imagem'))
           .toList();
 
       print(toRemove);
@@ -218,35 +215,46 @@ Future<void> fetchData() async {
     loadingMidias.value = true;
 
     // (B) ──────────────────────────────────────────────────────────────
-    // 4. Baixe as mídias com barra de progresso
+    // 4. Baixe as mídias com barra de progresso (apenas vídeos e imagens)
     final downloadFutures = <Future<void>>[];
 
     for (final m in rawMidias) {
       final entrada = <String, dynamic>{
-        'tipo'    : m['tipo'],
-        'url'     : m['url'],
-        'file'    : null,
-        'progress': 0.0,
+        'tipo'            : m['tipo'],
+        'url'             : m['url'],
+        'file'            : null,
+        'progress'        : 0.0,
+        'qlik_integration': m['qlik_integration'] ?? false,
+        'url_externa'     : m['url_externa'],
+        'url_original'    : m['url_original'],
       }.obs;
       midiasCache.add(entrada);
 
-      final c = Completer<void>();
-      downloadFutures.add(c.future);
+      if (m['tipo'] == 'video' || m['tipo'] == 'imagem') {
+        // Download apenas para vídeos e imagens
+        final c = Completer<void>();
+        downloadFutures.add(c.future);
 
-      _mediaCache.getFileStream(m['url'], withProgress: true).listen((resp) {
-        if (resp is DownloadProgress) {
-          final pct = resp.totalSize != null
-              ? resp.downloaded / resp.totalSize!
-              : 0.0;
-          entrada['progress'] = pct;
-          entrada.refresh();
-        } else if (resp is FileInfo) {
-          entrada['file']     = resp.file.path;
-          entrada['progress'] = 1.0;
-          entrada.refresh();
-          c.complete();
-        }
-      });
+        _mediaCache.getFileStream(m['url'], withProgress: true).listen((resp) {
+          if (resp is DownloadProgress) {
+            final pct = resp.totalSize != null
+                ? resp.downloaded / resp.totalSize!
+                : 0.0;
+            entrada['progress'] = pct;
+            entrada.refresh();
+          } else if (resp is FileInfo) {
+            entrada['file']     = resp.file.path;
+            entrada['progress'] = 1.0;
+            entrada.refresh();
+            c.complete();
+          }
+        });
+      } else if (m['tipo'] == 'url') {
+        // URLs são "baixadas" instantaneamente
+        entrada['progress'] = 1.0;
+        entrada['file'] = m['url']; // Para URLs, o "file" é a própria URL
+        entrada.refresh();
+      }
     }
 
     await Future.wait(downloadFutures);
@@ -256,9 +264,12 @@ Future<void> fetchData() async {
     final listaParaPrefs = [
       for (final rx in midiasCache)
         {
-          'tipo': rx['tipo'],
-          'url' : rx['url'],
-          'file': rx['file'],     // path definitivo
+          'tipo'            : rx['tipo'],
+          'url'             : rx['url'],
+          'file'            : rx['file'],
+          'qlik_integration': rx['qlik_integration'] ?? false,
+          'url_externa'     : rx['url_externa'],
+          'url_original'    : rx['url_original'],
         }
     ];
     await prefs.setString('midias', jsonEncode(listaParaPrefs));
@@ -379,6 +390,29 @@ Future<void> fetchData() async {
     return !setEquals(apiUrls, storedUrls);
   }
 
+  // Método para buscar URL do Qlik com ticket
+  Future<String?> getQlikUrl(String qlikApiUrl) async {
+    try {
+      final response = await dio.get(
+        qlikApiUrl,
+        options: Options(
+          headers: {'Authorization': 'Bearer $apiKey'},
+          validateStatus: (code) => code != null && code < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data['success'] == true && data['ready_to_use'] == true) {
+          return data['qlik_url'] as String?;
+        }
+      }
+      return null;
+    } on DioException catch (e) {
+      debugPrint('⚠️ Erro ao buscar URL do Qlik: $e');
+      return null;
+    }
+  }
 
   void showDownloadProgress() {
     Get.dialog(

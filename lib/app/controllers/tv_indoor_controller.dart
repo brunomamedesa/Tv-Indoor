@@ -1,14 +1,13 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
-import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -28,6 +27,8 @@ class TvIndoorController extends GetxController {
   final RxMap<String, dynamic> mediaAtual = <String, dynamic>{}.obs;
   final RxBool existeMidia = false.obs;
   final RxBool isWebview = false.obs;
+  final RxString currentWebviewUrl = ''.obs;
+  final RxBool webviewLoaded = false.obs;
 
   Timer? _mediaTimer;
   Dio dio = Dio();
@@ -38,15 +39,42 @@ class TvIndoorController extends GetxController {
   final RxBool videoReady = false.obs;
 
 
-  final WebViewController webview = WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..loadRequest(Uri.parse(
-      'https://intraneth.grupobig.com.br/api/externo/shockmetais'
-  ));
+  late final WebViewController webview;
   
   @override
   Future<void> onInit() async {
     super.onInit();
+    
+    // Inicializar WebView
+    webview = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..enableZoom(true)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // Opcionalmente, você pode capturar o progresso do carregamento
+          },
+          onPageStarted: (String url) {
+            // Página começou a carregar
+            webviewLoaded.value = false;
+          },
+          onPageFinished: (String url) {
+            // Página terminou de carregar
+            webviewLoaded.value = true;
+          },
+          onWebResourceError: (WebResourceError error) {
+            // Tratar erros de carregamento
+            print('WebView error: ${error.description}');
+            webviewLoaded.value = true; // Para não travar
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            // Permite todas as navegações
+            return NavigationDecision.navigate;
+          },
+        ),
+      );
+    
     isLoading.value = true;
     getTempoAtualizacao();
     _stopLoop.value = false;
@@ -133,10 +161,18 @@ class TvIndoorController extends GetxController {
       midias.clear();
       return;
     }
+    
+    // Carrega mídias com novos campos para URLs
+    final List<dynamic> rawMidias = jsonDecode(json) as List;
     midias.assignAll(
-      (jsonDecode(json) as List)
-          .map((e) => Map<String, dynamic>.from(e).obs)
-          .toList(),
+      rawMidias.map((e) {
+        final Map<String, dynamic> midia = Map<String, dynamic>.from(e);
+        // Garante que os novos campos existam
+        midia['qlik_integration'] = midia['qlik_integration'] ?? false;
+        midia['url_externa'] = midia['url_externa'];
+        midia['url_original'] = midia['url_original'];
+        return midia.obs;
+      }).toList(),
     );
   }
 
@@ -149,6 +185,13 @@ class TvIndoorController extends GetxController {
       return;
     }
 
+    // Limpar estado anterior para transições suaves
+    isWebview.value = false;
+    webviewLoaded.value = false;
+    
+    // Pequeno delay para limpar interface
+    await Future.delayed(const Duration(milliseconds: 300));
+
     // Garantimos que o indice esteja dentro dos limites
     currentIndex.value = idx % midias.length;
     final m = midias[currentIndex.value];
@@ -160,6 +203,7 @@ class TvIndoorController extends GetxController {
     if (m['tipo'] == 'video' && m['file'] != null) {
       // → Tocar vídeo
       // ------------------------------------------------
+      isWebview.value = false;
       if (videoController != null) {
         // Se já existia um controller anterior, descarte-o
         await videoController!.dispose();
@@ -181,9 +225,9 @@ class TvIndoorController extends GetxController {
         _playMediaNoIndice(proximo);
       }
 
-
-    } else {
+    } else if (m['tipo'] == 'imagem') {
       // → Mostrar imagem por 20 segundos
+      isWebview.value = false;
       isLoading.value = false;
       await Future.delayed(const Duration(seconds: 20));
       if (!_stopLoop.value) {
@@ -191,6 +235,63 @@ class TvIndoorController extends GetxController {
         _playMediaNoIndice(proximo);
       }
 
+    } else if (m['tipo'] == 'url') {
+      // → Mostrar URL em WebView
+      // Primeiro limpar qualquer conteúdo anterior
+      isWebview.value = false;
+      await Future.delayed(const Duration(milliseconds: 500)); // Pequeno delay para limpar tela
+      
+      isWebview.value = true;
+      webviewLoaded.value = false;
+      
+      String? urlToLoad;
+      
+      if (m['qlik_integration'] == true) {
+        // Buscar URL do Qlik com ticket
+        final configController = Get.find<ConfigController>();
+        urlToLoad = await configController.getQlikUrl(m['url']);
+        
+        if (urlToLoad == null) {
+          print('Erro ao obter URL do Qlik, pulando mídia');
+          if (!_stopLoop.value) {
+            final int proximo = (currentIndex.value + 1) % midias.length;
+            _playMediaNoIndice(proximo);
+          }
+          return;
+        }
+      } else {
+        // URL externa direta
+        urlToLoad = m['url_externa'] ?? m['url'];
+      }
+      
+      if (urlToLoad != null) {
+        currentWebviewUrl.value = urlToLoad;
+        await webview.loadRequest(Uri.parse(urlToLoad));
+        
+        // Aguardar carregamento completo da página
+        while (!webviewLoaded.value && !_stopLoop.value) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+        
+        isLoading.value = false;
+        
+        // Aguardar mais 2 segundos após o carregamento para garantir renderização
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // Exibir por 18 segundos (20 total - 2 já aguardados)
+        await Future.delayed(const Duration(seconds: 18));
+        
+        if (!_stopLoop.value) {
+          final int proximo = (currentIndex.value + 1) % midias.length;
+          _playMediaNoIndice(proximo);
+        }
+      } else {
+        // Se não conseguiu obter URL, pula para próxima mídia
+        if (!_stopLoop.value) {
+          final int proximo = (currentIndex.value + 1) % midias.length;
+          _playMediaNoIndice(proximo);
+        }
+      }
     }
   }
 
