@@ -75,6 +75,9 @@ class TvIndoorController extends GetxController {
         ),
       );
     
+    // Carregar página em branco inicialmente para evitar páginas padrão
+    await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
+    
     isLoading.value = true;
     getTempoAtualizacao();
     _stopLoop.value = false;
@@ -189,6 +192,9 @@ class TvIndoorController extends GetxController {
     isWebview.value = false;
     webviewLoaded.value = false;
     
+    // Carregar página em branco para limpar WebView completamente
+    await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
+    
     // Pequeno delay para limpar interface
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -239,7 +245,10 @@ class TvIndoorController extends GetxController {
       // → Mostrar URL em WebView
       // Primeiro limpar qualquer conteúdo anterior
       isWebview.value = false;
-      await Future.delayed(const Duration(milliseconds: 500)); // Pequeno delay para limpar tela
+      
+      // Carregar página em branco para limpar completamente
+      await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
+      await Future.delayed(const Duration(milliseconds: 500)); // Aguardar limpeza
       
       isWebview.value = true;
       webviewLoaded.value = false;
@@ -266,6 +275,8 @@ class TvIndoorController extends GetxController {
       
       if (urlToLoad != null) {
         currentWebviewUrl.value = urlToLoad;
+        print('🌐 Carregando URL: $urlToLoad'); // Debug
+        
         await webview.loadRequest(Uri.parse(urlToLoad));
         
         // Aguardar carregamento completo da página
