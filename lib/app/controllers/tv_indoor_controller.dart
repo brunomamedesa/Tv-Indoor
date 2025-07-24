@@ -289,8 +289,8 @@ class TvIndoorController extends GetxController {
         // Aguardar mais 2 segundos após o carregamento para garantir renderização
         await Future.delayed(const Duration(seconds: 2));
         
-        // Exibir por 18 segundos (20 total - 2 já aguardados)
-        await Future.delayed(const Duration(seconds: 18));
+        // Exibir por 118 segundos (120 total - 2 já aguardados = 2 minutos)
+        await Future.delayed(const Duration(seconds: 118));
         
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
