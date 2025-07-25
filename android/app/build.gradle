@@ -43,6 +43,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+        
+        // Configurações específicas para TV Box
+        multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -57,6 +61,8 @@ dependencies {
     implementation "com.airbnb.android:lottie:6.6.3"
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'androidx.webkit:webkit:1.8.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
 
 
 }

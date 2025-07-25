@@ -45,11 +45,12 @@ class TvIndoorController extends GetxController {
   Future<void> onInit() async {
     super.onInit();
     
-    // Inicializar WebView
+    // Inicializar WebView com configurações completas
     webview = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
       ..enableZoom(true)
+      ..setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -65,8 +66,12 @@ class TvIndoorController extends GetxController {
           },
           onWebResourceError: (WebResourceError error) {
             // Tratar erros de carregamento
-            print('WebView error: ${error.description}');
-            webviewLoaded.value = true; // Para não travar
+            print('🚨 WebView error: ${error.description}');
+            print('🚨 Error type: ${error.errorType}');
+            print('🚨 Failed URL: ${error.url}');
+            
+            // Definir como carregado para não travar, mas com aviso
+            webviewLoaded.value = true;
           },
           onNavigationRequest: (NavigationRequest request) {
             // Permite todas as navegações
@@ -74,6 +79,9 @@ class TvIndoorController extends GetxController {
           },
         ),
       );
+
+    // Configurar cookies e storage
+    await _configureWebViewSettings();
     
     // Carregar página em branco inicialmente para evitar páginas padrão
     await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
@@ -92,6 +100,96 @@ class TvIndoorController extends GetxController {
       isLoading.value = false;
     }
 
+  }
+
+  // Configurar WebView com suporte completo para cookies, localStorage, sessionStorage
+  Future<void> _configureWebViewSettings() async {
+    try {
+      print('🔧 Iniciando configuração do WebView...');
+      
+      // Configuração básica de cookies (apenas se disponível)
+      if (Platform.isAndroid) {
+        try {
+          final cookieManager = WebViewCookieManager();
+          await cookieManager.clearCookies();
+          print('✅ Cookies limpos com sucesso');
+        } catch (e) {
+          print('⚠️ Erro ao configurar cookies: $e');
+        }
+      }
+
+      // Injetar JavaScript básico para configurar storage
+      try {
+        await webview.runJavaScript('''
+          console.log("🚀 Inicializando WebView...");
+          
+          // Testar localStorage básico
+          try {
+            if (typeof(Storage) !== "undefined") {
+              localStorage.setItem('test', 'ok');
+              console.log("✅ LocalStorage funcionando");
+            }
+          } catch(e) {
+            console.log("⚠️ LocalStorage não disponível:", e);
+          }
+          
+          // Configurar cookies básicos
+          try {
+            document.cookie = "webview=active; Path=/";
+            console.log("✅ Cookies configurados");
+          } catch(e) {
+            console.log("⚠️ Erro ao configurar cookies:", e);
+          }
+          
+          console.log("✅ WebView configurado");
+        ''');
+        print('✅ JavaScript executado com sucesso');
+      } catch (e) {
+        print('⚠️ Erro ao executar JavaScript: $e');
+      }
+      
+    } catch (e) {
+      print('❌ Erro ao configurar WebView: $e');
+    }
+  }
+
+  // Configurações adicionais após o carregamento da página
+  Future<void> _configurePageAfterLoad() async {
+    try {
+      // Aguardar um tempo adicional para garantir que todos os recursos carregaram
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Executar JavaScript para otimizar a página carregada
+      await webview.runJavaScript('''
+        // Aguardar o DOM estar completamente carregado
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM completamente carregado');
+          });
+        }
+        
+        // Aguardar recursos externos (imagens, scripts, etc.)
+        window.addEventListener('load', function() {
+          console.log('Todos os recursos foram carregados');
+        });
+        
+        // Forçar reflow para garantir renderização
+        document.body.offsetHeight;
+        
+        // Configurar timeouts maiores para requests
+        if (typeof jQuery !== 'undefined') {
+          jQuery.ajaxSetup({ timeout: 30000 });
+        }
+        
+        // Aguardar um pouco mais para frameworks como Qlik carregarem completamente
+        setTimeout(function() {
+          console.log('Página totalmente inicializada para BI');
+        }, 2000);
+      ''');
+      
+    } catch (e) {
+      print('Erro ao configurar página após carregamento: \$e');
+    }
   }
 
   Future<void> reload() async {
@@ -277,20 +375,34 @@ class TvIndoorController extends GetxController {
         currentWebviewUrl.value = urlToLoad;
         print('🌐 Carregando URL: $urlToLoad'); // Debug
         
-        await webview.loadRequest(Uri.parse(urlToLoad));
+        // Carregar URL com headers customizados para melhor compatibilidade
+        await webview.loadRequest(
+          Uri.parse(urlToLoad),
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Upgrade-Insecure-Requests': '1',
+          },
+        );
         
         // Aguardar carregamento completo da página
         while (!webviewLoaded.value && !_stopLoop.value) {
           await Future.delayed(const Duration(milliseconds: 100));
         }
         
+        // Executar configurações adicionais após o carregamento
+        await _configurePageAfterLoad();
+        
         isLoading.value = false;
         
-        // Aguardar mais 2 segundos após o carregamento para garantir renderização
-        await Future.delayed(const Duration(seconds: 2));
+        // Aguardar mais 5 segundos após o carregamento para garantir renderização completa e execução de scripts
+        await Future.delayed(const Duration(seconds: 5));
         
-        // Exibir por 118 segundos (120 total - 2 já aguardados = 2 minutos)
-        await Future.delayed(const Duration(seconds: 118));
+        // Exibir por 115 segundos (120 total - 5 já aguardados = 2 minutos)
+        await Future.delayed(const Duration(seconds: 115));
         
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
