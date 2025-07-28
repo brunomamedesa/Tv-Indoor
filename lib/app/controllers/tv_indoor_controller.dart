@@ -103,7 +103,7 @@ class TvIndoorController extends GetxController {
     await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
     
     isLoading.value = true;
-    getTempoAtualizacao();
+    _scheduleNextReload(); // agenda primeiro reload em 10 minutos
     _stopLoop.value = false;
     await getMidias();
 
@@ -211,63 +211,96 @@ class TvIndoorController extends GetxController {
   Future<void> reload() async {
     isLoading.value = true;
 
+    // Verificar conectividade antes de tentar atualizar
+    try {
+      final connectivityController = Get.find<ConnectivityController>();
+      if (!connectivityController.isConnected.value) {
+        _showToast('Sem conexão - pulando atualização');
+        _scheduleNextReload(); // agenda próximo reload
+        isLoading.value = false;
+        return;
+      }
+    } catch (e) {
+      print('Erro ao verificar conectividade: $e');
+    }
+
+    _showToast('Iniciando busca de mídias...');
+
     // ── 1. Checa rapidamente se há mídias novas ─────────────────────────
     final cfg = Get.find<ConfigController>();
-    await cfg.fetchData();  
-    if (cfg.deviceData.isEmpty) {
-      getTempoAtualizacao();
+    try {
+      await cfg.fetchData();  
+      if (cfg.deviceData.isEmpty) {
+        _showToast('Erro na busca - sem dados do servidor');
+        _scheduleNextReload();
+        isLoading.value = false;
+        return;
+      }
+    } catch (e) {
+      _showToast('Erro de conexão - cancelando busca');
+      _scheduleNextReload();
       isLoading.value = false;
       return;
     }
-                           // GET leve
-    final bool midiasMudaram = await cfg.verificarMidiasAlteradas();
-    await cfg.saveCotacoes();
-    await cfg.saveNoticias();
-    await cfg.savePrevisaoTempo();
-    await cfg.saveCotMetais();
 
-    // ── 2A. NÃO mudou nada  →  simplesmente continua ────────────────────
-    if (!midiasMudaram) {
-      // Se, por acaso, um vídeo estava pausado, retomamos
-      if (videoController?.value.isInitialized == true &&
-          !videoController!.value.isPlaying) {
-        await videoController!.play();
+    try {
+      final bool midiasMudaram = await cfg.verificarMidiasAlteradas();
+      await cfg.saveCotacoes();
+      await cfg.saveNoticias();
+      await cfg.savePrevisaoTempo();
+      await cfg.saveCotMetais();
+
+      // ── 2A. NÃO mudou nada  →  simplesmente continua ────────────────────
+      if (!midiasMudaram) {
+        // Se, por acaso, um vídeo estava pausado, retomamos
+        if (videoController?.value.isInitialized == true &&
+            !videoController!.value.isPlaying) {
+          await videoController!.play();
+        }
+        _showToast('Busca concluída - sem alterações');
+        _scheduleNextReload();   // agenda próximo reload
+        isLoading.value = false;
+        return;                  // sai sem mexer em timers ou índices
       }
-      getTempoAtualizacao();   // agenda próximo reload
+
+      // ── 2B. MUDOU → precisamos atualizar ────────────────────────────────
+      _stopLoop.value = true;          // bloqueia callbacks de imagem/vídeo
+      _imageTimer?.cancel();           // cancela timer de imagem, se houver
+      _imageTimer = null;
+
+      if (videoController != null) {
+        await videoController!.pause();     // pausa o vídeo atual
+        await videoController!.dispose();   // descarta controller + listeners
+        videoController = null;
+        videoReady.value = false;
+      }
+
+      // ── 3. Baixa e grava novas mídias (mostra o diálogo de progresso) ───
+      await cfg.handleMidias(cfg.deviceData['midias']);   // aguarda download
+
+      // ── 4. Recarrega lista salva no SharedPreferences ───────────────────
+      await getMidias();
+      currentIndex.value = 0;
+
+      // ── 5. Libera o loop e começa do índice 0 ───────────────────────────
+      _stopLoop.value = false;
+      if (midias.isNotEmpty) {
+        existeMidia.value = true;
+        _playMediaNoIndice(0);
+      } else {
+        existeMidia.value = false;
+        isLoading.value = false;
+      }
+
+      _showToast('Mídias atualizadas com sucesso');
+      _scheduleNextReload();   // agenda próximo reload
       isLoading.value = false;
-      return;                  // sai sem mexer em timers ou índices
-    }
-    // ── 2B. MUDOU → precisamos atualizar ────────────────────────────────
-    _stopLoop.value = true;          // bloqueia callbacks de imagem/vídeo
-    _imageTimer?.cancel();           // cancela timer de imagem, se houver
-    _imageTimer = null;
 
-    if (videoController != null) {
-      await videoController!.pause();     // pausa o vídeo atual
-      await videoController!.dispose();   // descarta controller + listeners
-      videoController = null;
-      videoReady.value = false;
-    }
-
-    // ── 3. Baixa e grava novas mídias (mostra o diálogo de progresso) ───
-    await cfg.handleMidias(cfg.deviceData['midias']);   // aguarda download
-
-    // ── 4. Recarrega lista salva no SharedPreferences ───────────────────
-    await getMidias();
-    currentIndex.value = 0;
-
-    // ── 5. Libera o loop e começa do índice 0 ───────────────────────────
-    _stopLoop.value = false;
-    if (midias.isNotEmpty) {
-      existeMidia.value = true;
-      _playMediaNoIndice(0);
-    } else {
-      existeMidia.value = false;
+    } catch (e) {
+      _showToast('Erro durante atualização - $e');
+      _scheduleNextReload();
       isLoading.value = false;
     }
-
-    getTempoAtualizacao();   // agenda próximo reload
-    isLoading.value = false;
   }
 
 
@@ -357,6 +390,22 @@ class TvIndoorController extends GetxController {
 
     } else if (m['tipo'] == 'url') {
       // → Mostrar URL em WebView
+      // Verificar conectividade antes de tentar carregar URL
+      try {
+        final connectivityController = Get.find<ConnectivityController>();
+        if (!connectivityController.isConnected.value) {
+          _showToast('Sem conexão - pulando mídia URL');
+          isLoading.value = false;
+          if (!_stopLoop.value) {
+            final int proximo = (currentIndex.value + 1) % midias.length;
+            _playMediaNoIndice(proximo);
+          }
+          return;
+        }
+      } catch (e) {
+        print('Erro ao verificar conectividade para URL: $e');
+      }
+
       // Primeiro limpar qualquer conteúdo anterior
       isWebview.value = false;
       
@@ -375,7 +424,7 @@ class TvIndoorController extends GetxController {
         urlToLoad = await configController.getQlikUrl(m['url']);
         
         if (urlToLoad == null) {
-          print('Erro ao obter URL do Qlik, pulando mídia');
+          _showToast('Erro ao obter URL Qlik - pulando mídia');
           if (!_stopLoop.value) {
             final int proximo = (currentIndex.value + 1) % midias.length;
             _playMediaNoIndice(proximo);
@@ -426,6 +475,7 @@ class TvIndoorController extends GetxController {
         }
       } else {
         // Se não conseguiu obter URL, pula para próxima mídia
+        _showToast('URL inválida - pulando mídia');
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
           _playMediaNoIndice(proximo);
@@ -434,21 +484,37 @@ class TvIndoorController extends GetxController {
     }
   }
 
-  Future<void> getTempoAtualizacao() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final timer = prefs.getString('tempo_atualizacao');
-
-    iniciaTimer(int.parse(timer!));
-  } 
-
-  void iniciaTimer(int minutes) {
+  // Agenda próximo reload fixo em 10 minutos
+  void _scheduleNextReload() {
     _mediaTimer?.cancel();
-    _mediaTimer = Timer(Duration(minutes: minutes), () {
+    _mediaTimer = Timer(const Duration(minutes: 10), () {
       reload();
     });
   }
 
   
+  // Método simples para mostrar toast/snackbar
+  void _showToast(String message) {
+    try {
+      Get.snackbar(
+        '',
+        message,
+        titleText: const SizedBox.shrink(),
+        backgroundColor: Colors.black54,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(20),
+        borderRadius: 8,
+        duration: const Duration(seconds: 3),
+        snackPosition: SnackPosition.BOTTOM,
+        isDismissible: true,
+        forwardAnimationCurve: Curves.easeOutBack,
+        reverseAnimationCurve: Curves.easeInBack,
+      );
+    } catch (e) {
+      print('Toast: $message'); // Fallback para log
+    }
+  }
+
   void _onError() {
     if (videoController?.value.hasError ?? false) {
       erroVideo.value =

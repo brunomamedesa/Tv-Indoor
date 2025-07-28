@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
+import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/screens/widgets/table_widget.dart';
 import 'package:weather_icons/weather_icons.dart';
@@ -48,6 +49,9 @@ class SideBar extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20,),
+                // Widget de status de conectividade
+                _buildConnectivityStatus(),
+                const SizedBox(height: 15,),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -294,5 +298,70 @@ class SideBar extends StatelessWidget {
             )
         );
     });
+  }
+
+  // Widget simples para mostrar status de conectividade
+  Widget _buildConnectivityStatus() {
+    try {
+      final connectivityController = Get.find<ConnectivityController>();
+      return Obx(() {
+        final isConnected = connectivityController.isConnected.value;
+        final connectionType = connectivityController.connectionType.value;
+        
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isConnected ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isConnected ? Colors.green : Colors.red,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isConnected ? Icons.wifi : Icons.wifi_off,
+                color: isConnected ? Colors.green : Colors.red,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isConnected ? 'Conectado ($connectionType)' : 'Sem conexão',
+                style: TextStyle(
+                  color: isConnected ? Colors.green : Colors.red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      });
+    } catch (e) {
+      // Se não conseguir encontrar o controller, mostra status neutro
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.grey, width: 1),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.help_outline, color: Colors.grey, size: 16),
+            SizedBox(width: 6),
+            Text(
+              'Status desconhecido',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
