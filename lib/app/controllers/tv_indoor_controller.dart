@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
+import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -44,6 +45,21 @@ class TvIndoorController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
+    
+    // Verificar se tem controller de conectividade e configurar listener
+    try {
+      final connectivityController = Get.find<ConnectivityController>();
+      connectivityController.isConnected.listen((isConnected) {
+        if (!isConnected) {
+          print('📡 Conexão perdida - pausando operações que dependem de internet');
+          // Aqui você pode adicionar lógica específica se necessário
+        } else {
+          print('📡 Conexão restabelecida');
+        }
+      });
+    } catch (e) {
+      print('ConnectivityController não encontrado: $e');
+    }
     
     // Inicializar WebView com configurações completas
     webview = WebViewController()
