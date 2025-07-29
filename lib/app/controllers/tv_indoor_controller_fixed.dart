@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -12,9 +11,6 @@ import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
 import 'package:tv_indoor/app/services/webview_cache_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
-
-
 
 class TvIndoorController extends GetxController {
   
@@ -36,10 +32,9 @@ class TvIndoorController extends GetxController {
   Dio dio = Dio();
 
   RxBool _stopLoop = false.obs;
-  Timer? _imageTimer; // usado para cancelar facilmente o “delay de imagem”
+  Timer? _imageTimer;
   VideoPlayerController? videoController;
   final RxBool videoReady = false.obs;
-
 
   late final WebViewController webview;
   
@@ -53,7 +48,6 @@ class TvIndoorController extends GetxController {
       connectivityController.isConnected.listen((isConnected) {
         if (!isConnected) {
           print('📡 Conexão perdida - pausando operações que dependem de internet');
-          // Aqui você pode adicionar lógica específica se necessário
         } else {
           print('📡 Conexão restabelecida');
         }
@@ -71,36 +65,30 @@ class TvIndoorController extends GetxController {
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
-            // Opcionalmente, você pode capturar o progresso do carregamento
+            // Progresso do carregamento
           },
           onPageStarted: (String url) {
-            // Página começou a carregar
             webviewLoaded.value = false;
           },
           onPageFinished: (String url) {
-            // Página terminou de carregar
             webviewLoaded.value = true;
           },
           onWebResourceError: (WebResourceError error) {
-            // Tratar erros de carregamento
             print('🚨 WebView error: ${error.description}');
             print('🚨 Error type: ${error.errorType}');
             print('🚨 Failed URL: ${error.url}');
-            
-            // Definir como carregado para não travar, mas com aviso
             webviewLoaded.value = true;
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Permite todas as navegações
             return NavigationDecision.navigate;
           },
         ),
       );
 
-    // Configurar cookies e storage
+    // Configurar WebView
     await _configureWebViewSettings();
     
-    // Carregar página em branco inicialmente para evitar páginas padrão
+    // Carregar página em branco inicialmente
     await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
     
     isLoading.value = true;
@@ -116,48 +104,25 @@ class TvIndoorController extends GetxController {
       existeMidia.value = false;
       isLoading.value = false;
     }
-
   }
 
-  // Configurar WebView com suporte completo para cookies, localStorage, sessionStorage
+  // Configurar WebView
   Future<void> _configureWebViewSettings() async {
     try {
       print('🔧 Iniciando configuração do WebView...');
       
-      // Configuração básica de cookies (apenas se disponível)
       if (Platform.isAndroid) {
         try {
           final cookieManager = WebViewCookieManager();
           await cookieManager.clearCookies();
           print('✅ Cookies limpos com sucesso');
         } catch (e) {
-          print('⚠️ Erro ao configurar cookies: $e');
+          print('⚠️ Erro ao limpar cookies: $e');
         }
       }
 
-      // Injetar JavaScript básico para configurar storage
       try {
         await webview.runJavaScript('''
-          console.log("🚀 Inicializando WebView...");
-          
-          // Testar localStorage básico
-          try {
-            if (typeof(Storage) !== "undefined") {
-              localStorage.setItem('test', 'ok');
-              console.log("✅ LocalStorage funcionando");
-            }
-          } catch(e) {
-            console.log("⚠️ LocalStorage não disponível:", e);
-          }
-          
-          // Configurar cookies básicos
-          try {
-            document.cookie = "webview=active; Path=/";
-            console.log("✅ Cookies configurados");
-          } catch(e) {
-            console.log("⚠️ Erro ao configurar cookies:", e);
-          }
-          
           console.log("✅ WebView configurado");
         ''');
         print('✅ JavaScript executado com sucesso');
@@ -167,45 +132,6 @@ class TvIndoorController extends GetxController {
       
     } catch (e) {
       print('❌ Erro ao configurar WebView: $e');
-    }
-  }
-
-  // Configurações adicionais após o carregamento da página
-  Future<void> _configurePageAfterLoad() async {
-    try {
-      // Aguardar um tempo adicional para garantir que todos os recursos carregaram
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Executar JavaScript para otimizar a página carregada
-      await webview.runJavaScript('''
-        // Aguardar o DOM estar completamente carregado
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM completamente carregado');
-          });
-        }
-        
-        // Aguardar recursos externos (imagens, scripts, etc.)
-        window.addEventListener('load', function() {
-          console.log('Todos os recursos foram carregados');
-        });
-        
-        // Forçar reflow para garantir renderização
-        document.body.offsetHeight;
-        
-        // Configurar timeouts maiores para requests
-        if (typeof jQuery !== 'undefined') {
-          jQuery.ajaxSetup({ timeout: 30000 });
-        }
-        
-        // Aguardar um pouco mais para frameworks como Qlik carregarem completamente
-        setTimeout(function() {
-          console.log('Página totalmente inicializada para BI');
-        }, 2000);
-      ''');
-      
-    } catch (e) {
-      print('Erro ao configurar página após carregamento: \$e');
     }
   }
 
@@ -340,7 +266,6 @@ class TvIndoorController extends GetxController {
     }
   }
 
-
   Future<void> getMidias() async {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString('midias');
@@ -368,13 +293,6 @@ class TvIndoorController extends GetxController {
       );
       
       print('📂 Mídias carregadas na variável: ${midias.length}');
-      
-      // Debug - mostrar cada mídia carregada
-      for (int i = 0; i < midias.length; i++) {
-        final media = midias[i];
-        print('📂 Mídia $i: ${media['tipo']} - ${media['file'] ?? media['url']}');
-      }
-      
     } catch (e) {
       print('❌ Erro ao decodificar mídias: $e');
       midias.clear();
@@ -396,17 +314,15 @@ class TvIndoorController extends GetxController {
 
     print('🎬 Reproduzindo mídia no índice: $idx de ${midias.length}');
 
-    // Limpar estado anterior para transições suaves
+    // Limpar estado anterior
     isWebview.value = false;
     webviewLoaded.value = false;
     
-    // Carregar página em branco para limpar WebView completamente
+    // Carregar página em branco para limpar WebView
     await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
-    
-    // Pequeno delay para limpar interface
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Garantimos que o indice esteja dentro dos limites
+    // Garantir que o índice está dentro dos limites
     currentIndex.value = idx % midias.length;
     final m = midias[currentIndex.value];
     existeMidia.value = true;
@@ -420,11 +336,9 @@ class TvIndoorController extends GetxController {
     if (m['tipo'] == 'video' && m['file'] != null) {
       print('🎥 Reproduzindo vídeo: ${m['file']}');
       
-      // → Tocar vídeo
-      // ------------------------------------------------
+      // Tocar vídeo
       isWebview.value = false;
       if (videoController != null) {
-        // Se já existia um controller anterior, descarte-o
         await videoController!.dispose();
         videoController = null;
       }
@@ -434,19 +348,16 @@ class TvIndoorController extends GetxController {
       
       try {
         await videoController!.initialize();
-
         isLoading.value = false;
         videoReady.value = true;
         await videoController!.play();
         videoController!.setVolume(1);
         
-        print('🎥 Vídeo iniciado - duração: ${videoController!.value.duration}');
-        
+        // Aguardar duração do vídeo
         await Future.delayed(videoController!.value.duration);
 
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
-          print('🎥 Vídeo finalizado - próximo índice: $proximo');
           _playMediaNoIndice(proximo);
         }
       } catch (e) {
@@ -461,7 +372,7 @@ class TvIndoorController extends GetxController {
     } else if (m['tipo'] == 'imagem') {
       print('🖼️ Exibindo imagem: ${m['file']}');
       
-      // → Mostrar imagem por 20 segundos
+      // Mostrar imagem por 20 segundos
       isWebview.value = false;
       isLoading.value = false;
       
@@ -469,15 +380,13 @@ class TvIndoorController extends GetxController {
       
       if (!_stopLoop.value) {
         final int proximo = (currentIndex.value + 1) % midias.length;
-        print('🖼️ Imagem finalizada - próximo índice: $proximo');
         _playMediaNoIndice(proximo);
       }
 
     } else if (m['tipo'] == 'url') {
       print('🌐 Carregando URL: ${m['url']}');
       
-      // → Mostrar URL em WebView
-      // Verificar conectividade antes de tentar carregar URL
+      // Verificar conectividade
       try {
         final connectivityController = Get.find<ConnectivityController>();
         if (!connectivityController.isConnected.value) {
@@ -493,12 +402,10 @@ class TvIndoorController extends GetxController {
         print('Erro ao verificar conectividade para URL: $e');
       }
 
-      // Primeiro limpar qualquer conteúdo anterior
+      // Limpar WebView
       isWebview.value = false;
-      
-      // Carregar página em branco para limpar completamente
       await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
-      await Future.delayed(const Duration(milliseconds: 500)); // Aguardar limpeza
+      await Future.delayed(const Duration(milliseconds: 500));
       
       isWebview.value = true;
       webviewLoaded.value = false;
@@ -506,7 +413,7 @@ class TvIndoorController extends GetxController {
       String? urlToLoad;
       
       if (m['qlik_integration'] == true) {
-        // Buscar URL do Qlik com ticket
+        // Buscar URL do Qlik
         final configController = Get.find<ConfigController>();
         urlToLoad = await configController.getQlikUrl(m['url']);
         
@@ -519,22 +426,19 @@ class TvIndoorController extends GetxController {
           return;
         }
       } else {
-        // URL externa direta
         urlToLoad = m['url_externa'] ?? m['url'];
       }
       
       if (urlToLoad != null) {
         currentWebviewUrl.value = urlToLoad;
-        print('🌐 Carregando URL otimizada: $urlToLoad'); // Debug
-        
-        // Usar sistema de cache otimizado
+        print('🌐 Carregando URL otimizada: $urlToLoad');
+
         try {
           isLoading.value = true;
           
-          // Usar o serviço de cache
+          // Usar cache otimizado
           final cachedContent = await WebViewCacheService.getCachedContent(urlToLoad);
           
-          // Carregar conteúdo otimizado
           await webview.loadHtmlString(
             cachedContent,
             baseUrl: urlToLoad,
@@ -544,24 +448,22 @@ class TvIndoorController extends GetxController {
         } catch (e) {
           print('⚠️ Erro no cache, usando carregamento direto: $e');
           
-          // Fallback: carregamento direto com headers otimizados
           await webview.loadRequest(
             Uri.parse(urlToLoad),
             headers: {
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
               'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
               'Accept-Encoding': 'gzip, deflate, br',
-              'Cache-Control': 'max-age=3600', // Cache por 1 hora
+              'Cache-Control': 'max-age=3600',
               'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             },
           );
         }
         
-        // Aguardar carregamento com timeout
+        // Aguardar carregamento e otimizar
         try {
-          await Future.delayed(const Duration(seconds: 2)); // Aguardar carregamento inicial
+          await Future.delayed(const Duration(seconds: 2));
           
-          // Injetar otimizações JavaScript
           await webview.runJavaScript('''
             try {
               // Remove elementos desnecessários
@@ -599,27 +501,24 @@ class TvIndoorController extends GetxController {
           isLoading.value = false;
         }
         
-        // Aguardar tempo de exibição (30 segundos) e passar para próxima mídia
+        // Aguardar 30 segundos e passar para próxima
         await Future.delayed(const Duration(seconds: 30));
         
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
-          print('🌐 WebView finalizado - próximo índice: $proximo');
           _playMediaNoIndice(proximo);
         }
       } else {
-        // Se não conseguiu obter URL, pula para próxima mídia
         _showToast('URL inválida - pulando mídia');
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
-          print('❌ URL inválida - próximo índice: $proximo');
           _playMediaNoIndice(proximo);
         }
       }
     }
   }
 
-  // Agenda próximo reload fixo em 10 minutos
+  // Agenda próximo reload em 10 minutos
   void _scheduleNextReload() {
     _mediaTimer?.cancel();
     _mediaTimer = Timer(const Duration(minutes: 10), () {
@@ -627,8 +526,6 @@ class TvIndoorController extends GetxController {
     });
   }
 
-  
-  // Método simples para mostrar toast/snackbar
   void _showToast(String message) {
     try {
       Get.snackbar(
@@ -642,24 +539,24 @@ class TvIndoorController extends GetxController {
         duration: const Duration(seconds: 3),
         snackPosition: SnackPosition.BOTTOM,
         isDismissible: true,
-        forwardAnimationCurve: Curves.easeOutBack,
-        reverseAnimationCurve: Curves.easeInBack,
       );
     } catch (e) {
-      print('Toast: $message'); // Fallback para log
+      print('Toast: $message');
     }
   }
 
   void _onError() {
     if (videoController?.value.hasError ?? false) {
-      erroVideo.value =
-          'Erro ao reproduzir: ${videoController!.value.errorDescription}';
+      erroVideo.value = videoController!.value.errorDescription ?? 'Erro desconhecido no vídeo';
+      print('❌ Erro no vídeo: ${erroVideo.value}');
     }
   }
 
   @override
   void onClose() {
+    print('🔄 Fechando TvIndoorController...');
     _mediaTimer?.cancel();
+    _imageTimer?.cancel();
     videoController?.dispose();
     super.onClose();
   }
