@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
+import 'package:tv_indoor/app/services/webview_cache_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -438,36 +439,82 @@ class TvIndoorController extends GetxController {
       
       if (urlToLoad != null) {
         currentWebviewUrl.value = urlToLoad;
-        print('🌐 Carregando URL: $urlToLoad'); // Debug
+        print('🌐 Carregando URL otimizada: $urlToLoad'); // Debug
         
-        // Carregar URL com headers customizados para melhor compatibilidade
-        await webview.loadRequest(
-          Uri.parse(urlToLoad),
-          headers: {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Upgrade-Insecure-Requests': '1',
-          },
-        );
-        
-        // Aguardar carregamento completo da página
-        while (!webviewLoaded.value && !_stopLoop.value) {
-          await Future.delayed(const Duration(milliseconds: 100));
+        // Usar sistema de cache otimizado
+        try {
+          isLoading.value = true;
+          
+          // Usar o serviço de cache
+          final cachedContent = await WebViewCacheService.getCachedContent(urlToLoad);
+          
+          // Carregar conteúdo otimizado
+          await webview.loadHtmlString(
+            cachedContent,
+            baseUrl: urlToLoad,
+          );
+          
+          print('✅ Conteúdo carregado do cache otimizado');
+        } catch (e) {
+          print('⚠️ Erro no cache, usando carregamento direto: $e');
+          
+          // Fallback: carregamento direto com headers otimizados
+          await webview.loadRequest(
+            Uri.parse(urlToLoad),
+            headers: {
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'Cache-Control': 'max-age=3600', // Cache por 1 hora
+              'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          );
         }
         
-        // Executar configurações adicionais após o carregamento
-        await _configurePageAfterLoad();
+        // Aguardar carregamento com timeout
+        try {
+          await Future.delayed(const Duration(seconds: 2)); // Aguardar carregamento inicial
+          
+          // Injetar otimizações JavaScript
+          await webview.runJavaScript('''
+            try {
+              // Remove elementos desnecessários
+              var scripts = document.getElementsByTagName('script');
+              for(var i = scripts.length - 1; i >= 0; i--) {
+                if(scripts[i].src.includes('analytics') || 
+                   scripts[i].src.includes('ads') ||
+                   scripts[i].src.includes('tracking')) {
+                  scripts[i].remove();
+                }
+              }
+              
+              // Desabilita interações
+              document.body.style.pointerEvents = 'none';
+              document.body.style.userSelect = 'none';
+              
+              // Otimiza imagens
+              var images = document.getElementsByTagName('img');
+              for(var i = 0; i < images.length; i++) {
+                images[i].loading = 'lazy';
+              }
+              
+              console.log('🚀 WebView otimizado para visualização');
+            } catch(e) {
+              console.log('Erro na otimização: ', e);
+            }
+          ''');
+          
+          webviewLoaded.value = true;
+          isLoading.value = false;
+          
+        } catch (e) {
+          print('Erro ao otimizar WebView: $e');
+          webviewLoaded.value = true;
+          isLoading.value = false;
+        }
         
-        isLoading.value = false;
-        
-        // Aguardar mais 5 segundos após o carregamento para garantir renderização completa e execução de scripts
-        await Future.delayed(const Duration(seconds: 5));
-        
-        // Exibir por 115 segundos (120 total - 5 já aguardados = 2 minutos)
-        await Future.delayed(const Duration(seconds: 115));
+        // Aguardar tempo de exibição (30 segundos) e passar para próxima mídia
+        await Future.delayed(const Duration(seconds: 30));
         
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;

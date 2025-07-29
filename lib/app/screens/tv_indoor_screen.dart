@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
-import 'package:tv_indoor/app/screens/widgets/connectivity_indicator.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 
@@ -156,12 +155,6 @@ class TvIndoorScreen extends StatelessWidget {
                   'assets/logos/logoTV01.png',
                   height: 50,
                 )
-              ),
-              // Indicador de conectividade no canto superior esquerdo
-              const Positioned(
-                left: 8,
-                top: 8,
-                child: ConnectivityIndicator(),
               ),
             ],
           ),

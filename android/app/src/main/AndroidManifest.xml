@@ -29,7 +29,16 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:largeHeap="true"
         android:supportsRtl="true"
-        android:extractNativeLibs="true">
+        android:extractNativeLibs="true"
+        android:vmSafeMode="false">
+
+        <!-- Configurações otimizadas para WebView -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="true" />
 
         <activity
             android:name=".SplashActivity"
