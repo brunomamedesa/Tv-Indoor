@@ -8,7 +8,6 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
-import 'package:tv_indoor/app/services/webview_cache_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -436,59 +435,56 @@ class TvIndoorController extends GetxController {
         try {
           isLoading.value = true;
           
-          // Usar cache otimizado
-          final cachedContent = await WebViewCacheService.getCachedContent(urlToLoad);
-          
-          await webview.loadHtmlString(
-            cachedContent,
-            baseUrl: urlToLoad,
-          );
-          
-          print('✅ Conteúdo carregado do cache otimizado');
-        } catch (e) {
-          print('⚠️ Erro no cache, usando carregamento direto: $e');
-          
+          // Carregamento DIRETO para BI - sem cache que interfere  
           await webview.loadRequest(
             Uri.parse(urlToLoad),
             headers: {
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
               'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
               'Accept-Encoding': 'gzip, deflate, br',
-              'Cache-Control': 'max-age=3600',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
               'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             },
-          );
-        }
-        
-        // Aguardar carregamento e otimizar
-        try {
-          await Future.delayed(const Duration(seconds: 2));
+          ).timeout(const Duration(seconds: 45));
           
+          print('✅ URL BI carregada diretamente');
+          
+          // Aguardar mais tempo para BI carregar completamente
+          await Future.delayed(const Duration(seconds: 5));
+          
+          // APENAS otimizações que NÃO quebram BI
           await webview.runJavaScript('''
             try {
-              // Remove elementos desnecessários
-              var scripts = document.getElementsByTagName('script');
-              for(var i = scripts.length - 1; i >= 0; i--) {
-                if(scripts[i].src.includes('analytics') || 
-                   scripts[i].src.includes('ads') ||
-                   scripts[i].src.includes('tracking')) {
-                  scripts[i].remove();
-                }
-              }
+              console.log('🔧 Configurando BI/Qlik...');
               
-              // Desabilita interações
-              document.body.style.pointerEvents = 'none';
-              document.body.style.userSelect = 'none';
+              // Remove APENAS elementos de publicidade específicos
+              var adsSelectors = [
+                'iframe[src*="doubleclick"]',
+                'iframe[src*="googlesyndication"]', 
+                'div[class*="advertisement"]',
+                'div[id*="google_ads"]',
+                '.ads',
+                '[class*="ad-banner"]'
+              ];
               
-              // Otimiza imagens
-              var images = document.getElementsByTagName('img');
-              for(var i = 0; i < images.length; i++) {
-                images[i].loading = 'lazy';
-              }
+              adsSelectors.forEach(function(selector) {
+                try {
+                  var elements = document.querySelectorAll(selector);
+                  elements.forEach(function(el) { 
+                    el.style.display = 'none'; 
+                  });
+                } catch(e) { /* ignore */ }
+              });
               
-              console.log('🚀 WebView otimizado para visualização');
+              // NÃO remove scripts (BI precisa)
+              // NÃO desabilita pointer-events (BI precisa de interação)
+              // NÃO remove event listeners (BI precisa de eventos)
+              
+              console.log('✅ BI/Qlik configurado sem quebrar funcionalidade');
             } catch(e) {
-              console.log('Erro na otimização: ', e);
+              console.log('⚠️ Erro na configuração (ignorado): ', e);
             }
           ''');
           
@@ -496,13 +492,15 @@ class TvIndoorController extends GetxController {
           isLoading.value = false;
           
         } catch (e) {
-          print('Erro ao otimizar WebView: $e');
-          webviewLoaded.value = true;
+          print('❌ Erro ao carregar BI: $e');
+          webviewLoaded.value = false;
+          isLoading.value = false;
+        }
           isLoading.value = false;
         }
         
-        // Aguardar 30 segundos e passar para próxima
-        await Future.delayed(const Duration(seconds: 30));
+        // Aguardar 4 minutos e passar para próxima
+        await Future.delayed(const Duration(minutes: 4));
         
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;

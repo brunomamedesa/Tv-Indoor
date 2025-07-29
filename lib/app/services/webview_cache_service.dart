@@ -41,7 +41,7 @@ class WebViewCacheService {
   }
   
   static String _optimizeHtml(String html) {
-    // Remove scripts de analytics, ads, etc.
+    // Remove APENAS scripts específicos de analytics e ads - MANTÉM Qlik funcionando
     html = html.replaceAll(RegExp(r'<script[^>]*google-analytics[^>]*>.*?</script>', 
         multiLine: true, dotAll: true), '');
     html = html.replaceAll(RegExp(r'<script[^>]*googletagmanager[^>]*>.*?</script>', 
@@ -49,33 +49,34 @@ class WebViewCacheService {
     html = html.replaceAll(RegExp(r'<script[^>]*facebook[^>]*>.*?</script>', 
         multiLine: true, dotAll: true), '');
     
-    // Remove iframes desnecessários (ads, trackers)
+    // Remove APENAS iframes de ads - NÃO remove outros iframes
     html = html.replaceAll(RegExp(r'<iframe[^>]*doubleclick[^>]*>.*?</iframe>', 
         multiLine: true, dotAll: true), '');
     html = html.replaceAll(RegExp(r'<iframe[^>]*googlesyndication[^>]*>.*?</iframe>', 
         multiLine: true, dotAll: true), '');
     
-    // Adiciona otimizações CSS
+    // CSS otimizado SEM quebrar BI/Qlik
     html = html.replaceFirst('</head>', '''
       <style>
-        * { 
-          pointer-events: none !important; 
-          user-select: none !important;
-        }
+        /* Remove apenas elementos de publicidade */
+        .ads, [class*="ad-"], [id*="ad-"] { display: none !important; }
+        .popup { display: none !important; }
+        
+        /* Otimizações gerais sem quebrar funcionalidade */
         img { 
           loading: lazy !important; 
           max-width: 100% !important;
           height: auto !important;
         }
-        video { display: none !important; }
-        iframe[src*="youtube"], iframe[src*="vimeo"] { display: none !important; }
-        .ads, [class*="ad-"], [id*="ad-"] { display: none !important; }
-        .popup { display: none !important; }
-        .modal { display: none !important; }
+        
+        /* Melhora performance de scroll */
         body {
           overflow-x: hidden !important;
           -webkit-overflow-scrolling: touch !important;
         }
+        
+        /* NÃO remove pointer-events - necessário para BI/Qlik funcionar */
+        /* NÃO desabilita interação - BI precisa de cliques/hover */
       </style>
       </head>
     ''');
