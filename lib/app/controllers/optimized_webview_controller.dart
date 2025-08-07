@@ -140,11 +140,11 @@ class OptimizedWebViewController extends GetxController {
           window.performance.mark('page-loaded');
         }
         
-        // Configurar viewport para dispositivos móveis com zoom otimizado de 90%
+        // Configurar viewport para dispositivos móveis com zoom otimizado de 85%
         var viewport = document.querySelector('meta[name="viewport"]');
-        var zoomValue = 0.9;
+        var zoomValue = 0.85;
         var maxZoom = 3.0;
-        var widthCompensation = '111%'; // 100/0.9 = 111%
+        var widthCompensation = '118%'; // 100/0.85 = 118%
         
         if (!viewport) {
           viewport = document.createElement('meta');
@@ -168,6 +168,41 @@ class OptimizedWebViewController extends GetxController {
         // Remover padding/margins desnecessários para aproveitar melhor o espaço vertical
         document.body.style.margin = '0';
         document.body.style.padding = '0';
+        
+        // Esconder barra superior do Qlik se existir
+        setTimeout(function() {
+          // Tentar esconder elementos comuns de header do Qlik
+          var selectors = [
+            '.qv-panel-sheet',
+            '.qvt-sheet-title-container', 
+            '.qv-object-title',
+            '[data-role="navigation"]',
+            '.qv-panel-navigation',
+            '.ng-scope:first-child',
+            'div[class*="header"]',
+            'div[class*="toolbar"]',
+            'div[id*="header"]'
+          ];
+          
+          selectors.forEach(function(selector) {
+            try {
+              var elements = document.querySelectorAll(selector);
+              elements.forEach(function(el, index) {
+                if (index === 0 && el.offsetTop < 100) { // Apenas elementos no topo
+                  el.style.display = 'none';
+                }
+              });
+            } catch(e) { /* ignore */ }
+          });
+          
+          // Ajustar container principal para compensar header removido
+          var mainContainers = document.querySelectorAll('div[class*="container"], main, .content');
+          mainContainers.forEach(function(container) {
+            container.style.paddingTop = '0px';
+            container.style.marginTop = '-20px';
+          });
+          
+        }, 2000);
       ''');
       
       print('✅ Configurações pós-carregamento aplicadas');

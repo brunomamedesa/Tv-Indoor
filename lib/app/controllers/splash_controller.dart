@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:tv_indoor/app/controllers/config_controller.dart';
-import 'package:tv_indoor/app/utils/globals.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashController extends GetxController {
   
@@ -47,36 +46,40 @@ class SplashController extends GetxController {
   Future<void> _initializeSystem() async {
     try {
       // Simular um tempo mínimo de splash para boa experiência
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 2));
       
       statusMessage.value = 'Verificando configurações...';
       await Future.delayed(const Duration(milliseconds: 800));
       
-      // Verificar se já está configurado
-      final configController = Get.put(ConfigController(), permanent: true);
-      await configController.autenticarDispositivo();
+      // Verificar se há configurações salvas localmente primeiro
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final deviceIdSaved = prefs.getString('device_id');
+        final isConfiguredSaved = prefs.getBool('is_configured') ?? false;
+        
+        if (deviceIdSaved != null && isConfiguredSaved) {
+          statusMessage.value = 'Configuração encontrada! Redirecionando...';
+          _stopAnimations();
+          isLoading.value = false;
+          await Future.delayed(const Duration(milliseconds: 800));
+          Get.offNamed('/tv-indoor');
+          return;
+        }
+      } catch (e) {
+        print('Erro ao verificar configurações locais: $e');
+      }
       
-      statusMessage.value = 'Finalizando...';
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Parar animações
+      // Se não encontrou configuração local, vai para tela de config
+      statusMessage.value = 'Redirecionando para configuração...';
       _stopAnimations();
       isLoading.value = false;
-      
-      // Redirecionar baseado na configuração
-      if (configurado.isTrue) {
-        statusMessage.value = 'Redirecionando para mídias...';
-        await Future.delayed(const Duration(milliseconds: 800));
-        Get.offNamed('/tv-indoor');
-      } else {
-        statusMessage.value = 'Redirecionando para configuração...';
-        await Future.delayed(const Duration(milliseconds: 800));
-        Get.offNamed('/config');
-      }
+      await Future.delayed(const Duration(milliseconds: 800));
+      Get.offNamed('/config');
       
     } catch (e) {
       print('Erro durante inicialização: $e');
       statusMessage.value = 'Erro na inicialização';
+      _stopAnimations();
       isLoading.value = false;
       
       // Em caso de erro, redireciona para config após 2 segundos

@@ -96,6 +96,11 @@ Future<void> fetchData() async {
       await fetchData();
       configurado.value = deviceData['configurado']; 
 
+      // Salvar status de configuração localmente
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_configured', configurado.value);
+      await prefs.setString('device_id', deviceId.value);
+
       iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
       await saveCotacoes();
       await saveNoticias();

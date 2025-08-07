@@ -39,12 +39,22 @@ class TvIndoorScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       if (controller.isLoading.isTrue) ... [
-                        const Expanded(child:  Center(child: CircularProgressIndicator(),)),
+                        const Expanded(
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          ),
+                        ),
                       ] else if (controller.isWebview.isTrue) ... [
                         // WebView para URLs
                         Expanded(
-                          child: WebViewWidget(
-                            controller: controller.webview,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: WebViewWidget(
+                              controller: controller.webview,
+                            ),
                           ),
                         ),
                       ] else if (controller.existeMidia.isTrue &&
@@ -139,7 +149,53 @@ class TvIndoorScreen extends StatelessWidget {
                               )
                             ],
                           )
-                        )
+                        ),
+                      ] else if (controller.erroVideo.value.isNotEmpty) ... [
+                        // Mostrar erro de vídeo
+                        Expanded(
+                          child: Container(
+                            color: Colors.red.withOpacity(0.1),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 64,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Erro na Reprodução de Vídeo',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  controller.erroVideo.value,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (controller.midias.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Arquivo: ${controller.midias[controller.currentIndex.value]['file']}',
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                       ]
                     ],
                   )

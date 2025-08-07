@@ -28,21 +28,24 @@ class OptimizedWebViewWidget extends StatelessWidget {
     
     return Container(
       color: Colors.black,
-      child: Stack(
-        children: [
-          // WebView
-          WebViewWidget(controller: controller.webViewController),
-          
-          // Loading overlay com progresso
-          Obx(() => controller.isLoading.value
-              ? _buildLoadingOverlay(controller)
-              : const SizedBox.shrink()),
-          
-          // Error overlay
-          Obx(() => controller.hasError.value
-              ? _buildErrorWidget(controller)
-              : const SizedBox.shrink()),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8.0),
+        child: Stack(
+          children: [
+            // WebView
+            WebViewWidget(controller: controller.webViewController),
+            
+            // Loading overlay com progresso
+            Obx(() => controller.isLoading.value
+                ? _buildLoadingOverlay(controller)
+                : const SizedBox.shrink()),
+            
+            // Error overlay
+            Obx(() => controller.hasError.value
+                ? _buildErrorWidget(controller)
+                : const SizedBox.shrink()),
+          ],
+        ),
       ),
     );
   }

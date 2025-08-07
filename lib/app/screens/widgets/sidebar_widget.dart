@@ -364,7 +364,12 @@ class SideBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: StreamBuilder<DateTime>(
-        stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+        stream: Stream.periodic(const Duration(seconds: 1), (_) {
+          // Pegar horário de Brasília (UTC-3)
+          final utcNow = DateTime.now().toUtc();
+          final brasiliaTime = utcNow.subtract(const Duration(hours: 3));
+          return brasiliaTime;
+        }),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const SizedBox();
           

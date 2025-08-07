@@ -43,8 +43,11 @@ class TvIndoorScreen extends StatelessWidget {
                       ] else if (controller.isWebview.isTrue) ... [
                         // WebView para URLs
                         Expanded(
-                          child: WebViewWidget(
-                            controller: controller.webview,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: WebViewWidget(
+                              controller: controller.webview,
+                            ),
                           ),
                         ),
                       ] else if (controller.existeMidia.isTrue &&

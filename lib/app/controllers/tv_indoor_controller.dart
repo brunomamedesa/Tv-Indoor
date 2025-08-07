@@ -376,9 +376,22 @@ class TvIndoorController extends GetxController {
 
     isLoading.value = true;
     videoReady.value = false;
+    
+    // Timeout de segurança para loading infinito
+    Timer(const Duration(seconds: 30), () {
+      if (isLoading.value) {
+        print('⏰ Timeout de loading - forçando reset');
+        isLoading.value = false;
+        if (!_stopLoop.value && midias.isNotEmpty) {
+          final int proximo = (currentIndex.value + 1) % midias.length;
+          _playMediaNoIndice(proximo);
+        }
+      }
+    });
 
     if (m['tipo'] == 'video' && m['file'] != null) {
       print('🎥 Reproduzindo vídeo: ${m['file']}');
+      print('🎥 Arquivo existe: ${File(m['file'] as String).existsSync()}');
       
       // → Tocar vídeo
       // ------------------------------------------------
@@ -387,20 +400,40 @@ class TvIndoorController extends GetxController {
         // Se já existia um controller anterior, descarte-o
         await videoController!.dispose();
         videoController = null;
+        print('🎥 Controller anterior descartado');
       }
 
-      videoController = VideoPlayerController.file(File(m['file'] as String))
+      final videoFile = File(m['file'] as String);
+      if (!videoFile.existsSync()) {
+        print('❌ Arquivo de vídeo não encontrado: ${m['file']}');
+        isLoading.value = false;
+        if (!_stopLoop.value) {
+          final int proximo = (currentIndex.value + 1) % midias.length;
+          _playMediaNoIndice(proximo);
+        }
+        return;
+      }
+
+      videoController = VideoPlayerController.file(videoFile)
         ..addListener(_onError);
       
       try {
+        print('🎥 Inicializando VideoPlayerController...');
         await videoController!.initialize();
+        
+        print('🎥 Controller inicializado com sucesso');
+        print('🎥 Duração: ${videoController!.value.duration}');
+        print('🎥 Tamanho: ${videoController!.value.size}');
+        print('🎥 AspectRatio: ${videoController!.value.aspectRatio}');
 
         isLoading.value = false;
         videoReady.value = true;
+        
+        print('🎥 Iniciando reprodução...');
         await videoController!.play();
         videoController!.setVolume(1);
         
-        print('🎥 Vídeo iniciado - duração: ${videoController!.value.duration}');
+        print('🎥 Vídeo iniciado - aguardando finalização...');
         
         await Future.delayed(videoController!.value.duration);
 
@@ -411,7 +444,9 @@ class TvIndoorController extends GetxController {
         }
       } catch (e) {
         print('❌ Erro ao reproduzir vídeo: $e');
+        print('❌ Tipo do erro: ${e.runtimeType}');
         isLoading.value = false;
+        videoReady.value = false;
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
           _playMediaNoIndice(proximo);
@@ -514,11 +549,11 @@ class TvIndoorController extends GetxController {
             try {
               console.log('🔧 Configurando BI/Qlik...');
               
-              // Configurar zoom otimizado de 90% para mostrar mais conteúdo na tela
+              // Configurar zoom otimizado de 85% para mostrar mais conteúdo na tela
               var viewport = document.querySelector('meta[name="viewport"]');
-              var zoomValue = 0.9;
+              var zoomValue = 0.85;
               var maxZoom = 3.0;
-              var widthCompensation = '111%'; // 100/0.9 = 111%
+              var widthCompensation = '118%'; // 100/0.85 = 118%
               
               if (!viewport) {
                 viewport = document.createElement('meta');
@@ -540,6 +575,42 @@ class TvIndoorController extends GetxController {
               document.documentElement.style.height = '100%';
               document.body.style.margin = '0';
               document.body.style.padding = '0';
+              
+              // Esconder barras superiores desnecessárias do Qlik/BI
+              setTimeout(function() {
+                // Selecionar elementos comuns de header/toolbar do Qlik
+                var headersToHide = [
+                  '.qv-panel-sheet',
+                  '.qvt-sheet-title-container',
+                  '.qv-object-title', 
+                  '[data-role="navigation"]',
+                  '.qv-panel-navigation',
+                  'div[class*="header"]:first-child',
+                  'div[class*="toolbar"]:first-child',
+                  'div[id*="header"]:first-child',
+                  '.ng-scope:first-child > div:first-child'
+                ];
+                
+                headersToHide.forEach(function(selector) {
+                  try {
+                    var elements = document.querySelectorAll(selector);
+                    elements.forEach(function(el, index) {
+                      // Apenas esconder elementos que estão no topo da página
+                      if (el.offsetTop < 120) {
+                        el.style.display = 'none';
+                      }
+                    });
+                  } catch(e) { /* ignore */ }
+                });
+                
+                // Ajustar containers principais
+                var containers = document.querySelectorAll('div[class*="container"], main, .content, .qv-panel-content');
+                containers.forEach(function(container) {
+                  container.style.paddingTop = '0px';
+                  container.style.marginTop = '-30px';
+                });
+                
+              }, 3000);
               
               // Remove APENAS elementos de publicidade específicos
               var adsSelectors = [
@@ -632,8 +703,21 @@ class TvIndoorController extends GetxController {
 
   void _onError() {
     if (videoController?.value.hasError ?? false) {
-      erroVideo.value =
-          'Erro ao reproduzir: ${videoController!.value.errorDescription}';
+      final errorDesc = videoController!.value.errorDescription;
+      print('❌ Erro no VideoPlayerController: $errorDesc');
+      erroVideo.value = 'Erro ao reproduzir: $errorDesc';
+      
+      // Se há erro, marcar como não pronto e tentar próxima mídia
+      videoReady.value = false;
+      isLoading.value = false;
+      
+      if (!_stopLoop.value && midias.isNotEmpty) {
+        final int proximo = (currentIndex.value + 1) % midias.length;
+        print('❌ Erro detectado - pulando para próxima mídia: $proximo');
+        Future.delayed(const Duration(seconds: 1), () {
+          _playMediaNoIndice(proximo);
+        });
+      }
     }
   }
 
