@@ -46,7 +46,16 @@ class ConfigController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
-    deviceId.value = (await getDeviceId())!;
+    print('🔧 ConfigController inicializando...');
+    final id = await getDeviceId();
+    deviceId.value = id ?? '';
+    print('📱 DeviceId obtido: ${deviceId.value}');
+    
+    if (deviceId.value.isEmpty) {
+      print('❌ ERRO: DeviceId está vazio!');
+      return;
+    }
+    
     await autenticarDispositivo();
   }
 
@@ -62,10 +71,20 @@ class ConfigController extends GetxController {
 
 
   Future<String?> getDeviceId() async{
-    return await MobileDeviceIdentifier().getDeviceId(); 
+    try {
+      final id = await MobileDeviceIdentifier().getDeviceId();
+      print('📱 MobileDeviceIdentifier retornou: $id');
+      return id;
+    } catch (e) {
+      print('❌ Erro ao obter deviceId: $e');
+      return null;
+    }
   }
 
 Future<void> fetchData() async {
+  print('📡 Iniciando fetchData para dispositivo: ${deviceId.value}');
+  print('🔗 URL: $baseUrl/dispositivo/${deviceId.value}');
+  
   try {
     final response = await dio.get(
       '$baseUrl/dispositivo/${deviceId.value}',
@@ -76,49 +95,95 @@ Future<void> fetchData() async {
       ),
     );
 
+    print('📡 Response recebido - Status: ${response.statusCode}');
+
     if (response.statusCode == 200 && response.data != null) {
       deviceData.value = response.data;          // ✅ ok
+      
+      // LOGS DETALHADOS para debug da API
+      print('✅ API Response Status: ${response.statusCode}');
+      print('📊 Device Data Keys: ${response.data.keys}');
+      
+      // Verificar cada campo individualmente
+      print('🔧 Dispositivo: ${response.data['dispositivo']}');
+      print('💰 Cotações: ${response.data['cotacoes']}');
+      print('📰 Notícias: ${response.data['noticias']}');
+      print('🌤️ Previsão Tempo: ${response.data['previsao_tempo']}');
+      print('🥇 Cotação Metais: ${response.data['cotacao_metais']}');
+      print('🎬 Mídias: ${response.data['midias']}');
+      
     } else {
       // resposta 404/500 ou corpo nulo
       deviceData.clear();                        // 👈 nada novo
       debugPrint('⚠️ Backend status ${response.statusCode}');
+      debugPrint('⚠️ Response body: ${response.data}');
     }
   } on DioException catch (e) {
     // timeout, perda de rede, etc. → só registra, sem rethrow
-    debugPrint('⚠️ Erro de rede: $e');
+    debugPrint('❌ Erro de rede detalhado: ${e.message}');
+    debugPrint('❌ Tipo do erro: ${e.type}');
+    debugPrint('❌ Response: ${e.response?.data}');
+    debugPrint('❌ Status Code: ${e.response?.statusCode}');
     deviceData.clear();                          // mantém cache antigo
+  } catch (e) {
+    debugPrint('❌ Erro não esperado em fetchData: $e');
+    deviceData.clear();
   }
 }
   Future<void> autenticarDispositivo() async {
     try {
-
+      print('🔐 Iniciando autentificação do dispositivo...');
+      print('📱 DeviceId atual: ${deviceId.value}');
       isLoading.value = true;
+      
+      print('📡 Fazendo fetchData...');
       await fetchData();
+      
+      if (deviceData.isEmpty) {
+        print('❌ DeviceData está vazio após fetchData');
+        print('❌ Verifique se o deviceId é válido e se a API está respondendo');
+        return;
+      }
+      
       configurado.value = deviceData['configurado']; 
+      print('⚙️ Dispositivo configurado: ${configurado.value}');
 
       // Salvar status de configuração localmente
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_configured', configurado.value);
       await prefs.setString('device_id', deviceId.value);
+      print('💾 Configurações locais salvas');
 
+      print('⏱️ Iniciando timer...');
       iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
+      
+      print('💰 Salvando cotações...');
       await saveCotacoes();
+      
+      print('📰 Salvando notícias...');
       await saveNoticias();
+      
+      print('🌤️ Salvando previsão do tempo...');
       await savePrevisaoTempo();
+      
+      print('🥇 Salvando cotação de metais...');
       await saveCotMetais();
+      
       if(configurado.isTrue) {
-        
+        print('🎬 Processando mídias...');
         await handleMidias(deviceData['midias']);
         Get.back();
 
         if(loadingMidias.isFalse){
+          print('🏠 Redirecionando para TV Indoor...');
           Get.offAllNamed('/tv-indoor');
         }
       }
     } catch (e) {
-      print(e);
+      print('❌ Erro durante autenticação: $e');
     } finally {
       isLoading.value = false;
+      print('✅ Autenticação finalizada');
     }
     
   }
@@ -158,39 +223,100 @@ Future<void> fetchData() async {
 
 
   Future<void> saveCotacoes() async {
+      print('💰 Iniciando saveCotacoes...');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var cotacoes = deviceData['cotacoes'];
-      print('print cotacoes: $cotacoes');
-      prefs.setString('cotacoes', jsonEncode(cotacoes));
-      WebviewController webviewController = Get.find<WebviewController>();
-      webviewController.getCotacoes();
+      print('💰 Dados das cotações recebidos da API: $cotacoes');
+      
+      if (cotacoes != null) {
+        prefs.setString('cotacoes', jsonEncode(cotacoes));
+        print('✅ Cotações salvas no SharedPreferences');
+      } else {
+        print('❌ Cotações é null - não foi salva');
+      }
+      
+      try {
+        WebviewController webviewController = Get.find<WebviewController>();
+        webviewController.getCotacoes();
+        print('✅ WebviewController.getCotacoes() chamado');
+      } catch (e) {
+        print('❌ Erro ao chamar WebviewController.getCotacoes(): $e');
+      }
   }
 
   Future<void> savePrevisaoTempo() async {
+      print('🌤️ Iniciando savePrevisaoTempo...');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      var cotacoes = deviceData['previsao_tempo'];
-      print('print cotacoes $cotacoes');
-      prefs.setString('previsao_tempo', jsonEncode(cotacoes));
-      WebviewController webviewController = Get.find<WebviewController>();
-      webviewController.getPrevisao();
+      var previsao = deviceData['previsao_tempo'];
+      print('🌤️ Dados da previsão recebidos da API: $previsao');
+      
+      if (previsao != null) {
+        prefs.setString('previsao_tempo', jsonEncode(previsao));
+        print('✅ Previsão salva no SharedPreferences');
+      } else {
+        print('❌ Previsão é null - não foi salva');
+      }
+      
+      try {
+        WebviewController webviewController = Get.find<WebviewController>();
+        webviewController.getPrevisao();
+        print('✅ WebviewController.getPrevisao() chamado');
+      } catch (e) {
+        print('❌ Erro ao chamar WebviewController.getPrevisao(): $e');
+      }
   }
 
   Future<void> saveCotMetais() async {
+      print('🥇 Iniciando saveCotMetais...');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var metais = deviceData['cotacao_metais'];
-      prefs.setString('cotacao_metais', jsonEncode(metais));
-      WebviewController webviewController = Get.find<WebviewController>();
-      webviewController.getMetais();
+      print('🥇 Dados dos metais recebidos da API: $metais');
+      
+      if (metais != null) {
+        prefs.setString('cotacao_metais', jsonEncode(metais));
+        print('✅ Cotação metais salva no SharedPreferences');
+      } else {
+        print('❌ Cotação metais é null - não foi salva');
+      }
+      
+      try {
+        WebviewController webviewController = Get.find<WebviewController>();
+        webviewController.getMetais();
+        print('✅ WebviewController.getMetais() chamado');
+      } catch (e) {
+        print('❌ Erro ao chamar WebviewController.getMetais(): $e');
+      }
   }
 
   Future<void> saveNoticias() async {
-
+      print('📰 Iniciando saveNoticias...');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var noticias = deviceData['noticias'];
-      prefs.setString('noticias', jsonEncode(noticias));
-      NoticiasController noticiasController = Get.find<NoticiasController>();
-      noticiasController.getNoticias();
-
+      print('📰 Dados das notícias recebidos da API: $noticias');
+      
+      if (noticias != null) {
+        prefs.setString('noticias', jsonEncode(noticias));
+        print('✅ Notícias salvas no SharedPreferences');
+      } else {
+        print('❌ Notícias é null - não foi salva');
+      }
+      
+      try {
+        // Tentar encontrar ou criar o controller
+        NoticiasController noticiasController;
+        if (Get.isRegistered<NoticiasController>()) {
+          noticiasController = Get.find<NoticiasController>();
+          print('✅ NoticiasController encontrado');
+        } else {
+          noticiasController = Get.put(NoticiasController());
+          print('✅ NoticiasController criado');
+        }
+        
+        noticiasController.getNoticias();
+        print('✅ NoticiasController.getNoticias() chamado');
+      } catch (e) {
+        print('❌ Erro ao trabalhar com NoticiasController: $e');
+      }
   }
 
   Future<void> handleMidias(List<dynamic> rawMidias) async {

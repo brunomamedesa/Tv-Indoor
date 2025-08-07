@@ -32,6 +32,10 @@ class AppPages {
       name: '/tv-indoor', 
       page: () => TvIndoorScreen(),
       binding: BindingsBuilder(() {
+        // Inicializar ConfigController se ainda não foi inicializado
+        if (!Get.isRegistered<ConfigController>()) {
+          Get.put(ConfigController(), permanent: true);
+        }
         Get.put(TvIndoorController());
       }),
     )

@@ -40,25 +40,48 @@ class WebviewController extends GetxController {
   }
 
   Future<void> getPrevisao() async {
+    print('🌤️ WebviewController: Carregando previsão do tempo...');
     loading.value = true;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     var prevEncoded = prefs.getString('previsao_tempo');
-    print('previsao: $prevEncoded');
+    print('🌤️ Previsão encontrada no SharedPreferences: $prevEncoded');
+    
     if(prevEncoded != null) {
-      previsaoTempo.value = jsonDecode(prevEncoded) ?? {};
-    } 
+      try {
+        previsaoTempo.value = jsonDecode(prevEncoded) ?? {};
+        print('✅ Previsão decodificada com ${previsaoTempo.length} itens');
+      } catch (e) {
+        print('❌ Erro ao decodificar previsão: $e');
+        previsaoTempo.value = {};
+      }
+    } else {
+      print('⚠️ Nenhuma previsão encontrada no SharedPreferences');
+      previsaoTempo.value = {};
+    }
     loading.value = false;
   }
 
   Future<void> getMetais() async {
+    print('🥇 WebviewController: Carregando cotação de metais...');
     loading.value = true;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     var prevEncoded = prefs.getString('cotacao_metais');
+    print('🥇 Cotação metais encontrada no SharedPreferences: $prevEncoded');
+    
     if(prevEncoded != null) {
-      cotacaoMetais.value = jsonDecode(prevEncoded) ?? {};
-    } 
+      try {
+        cotacaoMetais.value = jsonDecode(prevEncoded) ?? {};
+        print('✅ Cotação metais decodificada com ${cotacaoMetais.length} itens');
+      } catch (e) {
+        print('❌ Erro ao decodificar cotação metais: $e');
+        cotacaoMetais.value = {};
+      }
+    } else {
+      print('⚠️ Nenhuma cotação de metais encontrada no SharedPreferences');
+      cotacaoMetais.value = {};
+    }
     loading.value = false;
   }
 

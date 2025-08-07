@@ -84,10 +84,26 @@ class TvIndoorController extends GetxController {
             // Tratar erros de carregamento
             print('🚨 WebView error: ${error.description}');
             print('🚨 Error type: ${error.errorType}');
+            print('🚨 Error code: ${error.errorCode}');
             print('🚨 Failed URL: ${error.url}');
             
-            // Definir como carregado para não travar, mas com aviso
-            webviewLoaded.value = true;
+            // Se for erro crítico, pular para próxima mídia
+            if (error.errorCode < 0) {
+              print('🚨 Erro crítico detectado - será pulado para próxima mídia');
+              // Não definir como carregado em caso de erro crítico
+              webviewLoaded.value = false;
+              
+              Future.delayed(const Duration(seconds: 3), () {
+                if (!_stopLoop.value && midias.isNotEmpty) {
+                  final int proximo = (currentIndex.value + 1) % midias.length;
+                  print('🚨 Pulando para próxima mídia devido a erro: $proximo');
+                  _playMediaNoIndice(proximo);
+                }
+              });
+            } else {
+              // Erro menor, tentar continuar
+              webviewLoaded.value = true;
+            }
           },
           onNavigationRequest: (NavigationRequest request) {
             // Permite todas as navegações
@@ -495,7 +511,6 @@ class TvIndoorController extends GetxController {
       await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
       await Future.delayed(const Duration(milliseconds: 500)); // Aguardar limpeza
       
-      isWebview.value = true;
       webviewLoaded.value = false;
       
       String? urlToLoad;
@@ -519,6 +534,8 @@ class TvIndoorController extends GetxController {
       }
       
       if (urlToLoad != null) {
+        // APENAS agora definir isWebview como true, após ter uma URL válida
+        isWebview.value = true;
         currentWebviewUrl.value = urlToLoad;
         print('🌐 Carregando URL BI/Qlik: $urlToLoad');
         
@@ -648,6 +665,16 @@ class TvIndoorController extends GetxController {
           print('❌ Erro ao carregar BI: $e');
           webviewLoaded.value = false;
           isLoading.value = false;
+          
+          // Em caso de erro, pular para próxima mídia após delay curto
+          await Future.delayed(const Duration(seconds: 5));
+          
+          if (!_stopLoop.value) {
+            final int proximo = (currentIndex.value + 1) % midias.length;
+            print('❌ Erro no WebView - próximo índice: $proximo');
+            _playMediaNoIndice(proximo);
+            return; // Sair da função para não aguardar os 4 minutos
+          }
         }
         
         // Aguardar tempo de exibição (4 minutos) e passar para próxima mídia
@@ -661,6 +688,8 @@ class TvIndoorController extends GetxController {
       } else {
         // Se não conseguiu obter URL, pula para próxima mídia
         _showToast('URL inválida - pulando mídia');
+        isLoading.value = false;
+        isWebview.value = false; // Resetar estado do WebView
         if (!_stopLoop.value) {
           final int proximo = (currentIndex.value + 1) % midias.length;
           print('❌ URL inválida - próximo índice: $proximo');
