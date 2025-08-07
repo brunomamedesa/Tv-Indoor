@@ -7,12 +7,19 @@ class SefazStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SefazController controller = Get.find<SefazController>();
-
-    return Obx(() {
-      if (controller.servicos.isEmpty && !controller.isLoading.value) {
-        return const SizedBox.shrink();
+    try {
+      // Tentar encontrar o controller, se não existir, criar
+      SefazController controller;
+      if (Get.isRegistered<SefazController>()) {
+        controller = Get.find<SefazController>();
+      } else {
+        controller = Get.put(SefazController());
       }
+
+      return Obx(() {
+        if (controller.servicos.isEmpty && !controller.isLoading.value) {
+          return const SizedBox.shrink();
+        }
 
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -101,6 +108,11 @@ class SefazStatusWidget extends StatelessWidget {
         ),
       );
     });
+    } catch (e) {
+      // Se der erro, retorna widget vazio
+      print('❌ Erro no SefazStatusWidget: $e');
+      return const SizedBox.shrink();
+    }
   }
 
   String _getNomeServico(String chave) {
