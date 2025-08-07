@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/screens/widgets/table_widget.dart';
 import 'package:weather_icons/weather_icons.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 
 
 class SideBar extends StatelessWidget {
@@ -49,8 +47,8 @@ class SideBar extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20,),
-                // Widget de status de conectividade
-                _buildConnectivityStatus(),
+                // Widget de data e hora
+                _buildDateTimeWidget(),
                 const SizedBox(height: 15,),
                 Expanded(
                   child: Column(
@@ -274,20 +272,11 @@ class SideBar extends StatelessWidget {
                       ),
                       Expanded(
                         child: Column(
-                          mainAxisAlignment:  MainAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'V${controller.versao.value}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  
-                                  height: 1.0,
-                                ),
-                              ),
-                            ),
+                            // Widget de status de conectividade movido para baixo
+                            _buildConnectivityStatus(),
+                            const SizedBox(height: 8),
                           ],
                         ),
                       ),
@@ -363,5 +352,50 @@ class SideBar extends StatelessWidget {
         ),
       );
     }
+  }
+
+  // Widget para mostrar data e hora
+  Widget _buildDateTimeWidget() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: StreamBuilder<DateTime>(
+        stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const SizedBox();
+          
+          final time = snapshot.data!;
+          final formattedDate = DateFormat('dd/MM', 'pt_BR').format(time);
+          final formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+          
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                formattedDate,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                formattedTime,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

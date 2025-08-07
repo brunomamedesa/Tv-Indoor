@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/routes/app_pages.dart';
-import 'package:tv_indoor/app/screens/widgets/noticias_widget.dart';
 import 'package:tv_indoor/app/screens/widgets/sidebar_widget.dart';
 import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -40,21 +39,7 @@ class MyApp extends StatelessWidget {
                 child: SideBar(),
               ),
               Expanded(
-                child: Column(
-                  children: [
-                    Expanded(
-                      flex: 5,
-                      child: child!
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        color: const Color.fromRGBO(51, 91, 64, 1.0),
-                        child: Noticias()
-                      )
-                    )
-                  ],
-                ),
+                child: child!,
               ),
             ],
           ),
