@@ -28,14 +28,14 @@ class ConnectivityController extends GetxController {
   }
 
   void _updateConnectionStatus(List<ConnectivityResult> results) async {
+    print('🔍 Verificando conectividade: $results');
+    
     if (results.contains(ConnectivityResult.none)) {
+      print('❌ Sem conectividade detectada');
       isConnected.value = false;
       connectionType.value = 'none';
     } else {
-      // Verifica se realmente tem acesso à internet
-      bool hasInternet = await _checkInternetAccess();
-      isConnected.value = hasInternet;
-      
+      // Primeiro, define o tipo de conexão
       if (results.contains(ConnectivityResult.wifi)) {
         connectionType.value = 'wifi';
       } else if (results.contains(ConnectivityResult.ethernet)) {
@@ -45,16 +45,43 @@ class ConnectivityController extends GetxController {
       } else {
         connectionType.value = 'other';
       }
+      
+      print('📡 Tipo de conexão: ${connectionType.value}');
+      
+      // Depois verifica se realmente tem acesso à internet
+      bool hasInternet = await _checkInternetAccess();
+      isConnected.value = hasInternet;
+      
+      print('🌐 Acesso à internet: ${hasInternet ? "SIM" : "NÃO"}');
     }
   }
 
   Future<bool> _checkInternetAccess() async {
     try {
-      final result = await InternetAddress.lookup('google.com').timeout(
-        const Duration(seconds: 5),
-      );
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      print('🔍 Testando acesso à internet...');
+      
+      // Testar múltiplos endereços para maior confiabilidade
+      final hosts = ['8.8.8.8', 'cloudflare.com', 'google.com'];
+      
+      for (final host in hosts) {
+        try {
+          final result = await InternetAddress.lookup(host).timeout(
+            const Duration(seconds: 3),
+          );
+          if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+            print('✅ Conectividade confirmada via $host');
+            return true;
+          }
+        } catch (e) {
+          print('⚠️ Falha ao conectar com $host: $e');
+          continue;
+        }
+      }
+      
+      print('❌ Todos os testes de conectividade falharam');
+      return false;
     } catch (e) {
+      print('❌ Erro geral no teste de conectividade: $e');
       return false;
     }
   }

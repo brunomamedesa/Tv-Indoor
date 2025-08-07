@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/connectivity_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
 import 'package:tv_indoor/app/screens/widgets/table_widget.dart';
+import 'package:tv_indoor/app/screens/widgets/sefaz_status_widget.dart';
 import 'package:weather_icons/weather_icons.dart';
 import 'package:intl/intl.dart';
 
@@ -274,6 +275,9 @@ class SideBar extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            // Widget SEFAZ
+                            const SefazStatusWidget(),
+                            const SizedBox(height: 8),
                             // Widget de status de conectividade movido para baixo
                             _buildConnectivityStatus(),
                             const SizedBox(height: 8),
