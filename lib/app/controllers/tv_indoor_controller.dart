@@ -514,11 +514,11 @@ class TvIndoorController extends GetxController {
             try {
               console.log('🔧 Configurando BI/Qlik...');
               
-              // Configurar zoom fixo de 80% para mostrar mais conteúdo na tela
+              // Configurar zoom otimizado de 90% para mostrar mais conteúdo na tela
               var viewport = document.querySelector('meta[name="viewport"]');
-              var zoomValue = 0.8;
+              var zoomValue = 0.9;
               var maxZoom = 3.0;
-              var widthCompensation = '125%'; // 100/0.8 = 125%
+              var widthCompensation = '111%'; // 100/0.9 = 111%
               
               if (!viewport) {
                 viewport = document.createElement('meta');
@@ -530,10 +530,16 @@ class TvIndoorController extends GetxController {
                 viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
               }
               
-              // Aplicar zoom via CSS Transform para melhor visualização
+              // Aplicar zoom via CSS Transform otimizado para dashboards verticais
               document.body.style.transform = 'scale(' + zoomValue + ')';
               document.body.style.transformOrigin = '0 0';
               document.body.style.width = widthCompensation;
+              
+              // Otimizações para melhor uso do espaço vertical
+              document.body.style.minHeight = '100vh';
+              document.documentElement.style.height = '100%';
+              document.body.style.margin = '0';
+              document.body.style.padding = '0';
               
               // Remove APENAS elementos de publicidade específicos
               var adsSelectors = [

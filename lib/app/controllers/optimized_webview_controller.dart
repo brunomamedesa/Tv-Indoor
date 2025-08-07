@@ -140,11 +140,11 @@ class OptimizedWebViewController extends GetxController {
           window.performance.mark('page-loaded');
         }
         
-        // Configurar viewport para dispositivos móveis com zoom fixo de 80%
+        // Configurar viewport para dispositivos móveis com zoom otimizado de 90%
         var viewport = document.querySelector('meta[name="viewport"]');
-        var zoomValue = 0.8;
+        var zoomValue = 0.9;
         var maxZoom = 3.0;
-        var widthCompensation = '125%'; // 100/0.8 = 125%
+        var widthCompensation = '111%'; // 100/0.9 = 111%
         
         if (!viewport) {
           viewport = document.createElement('meta');
@@ -156,10 +156,18 @@ class OptimizedWebViewController extends GetxController {
           viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
         }
         
-        // Aplicar zoom via CSS Transform
+        // Aplicar zoom via CSS Transform otimizado para conteúdo vertical
         document.body.style.transform = 'scale(' + zoomValue + ')';
         document.body.style.transformOrigin = '0 0';
         document.body.style.width = widthCompensation;
+        
+        // Otimização específica para dashboards com muito conteúdo vertical
+        document.body.style.minHeight = '100vh';
+        document.documentElement.style.height = '100%';
+        
+        // Remover padding/margins desnecessários para aproveitar melhor o espaço vertical
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
       ''');
       
       print('✅ Configurações pós-carregamento aplicadas');
