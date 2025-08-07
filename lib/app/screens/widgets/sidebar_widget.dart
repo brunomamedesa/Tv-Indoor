@@ -369,7 +369,7 @@ class SideBar extends StatelessWidget {
           if (!snapshot.hasData) return const SizedBox();
           
           final time = snapshot.data!;
-          final formattedDate = DateFormat('dd/MM', 'pt_BR').format(time);
+          final formattedDate = DateFormat('dd \'de\' MMMM \'de\' yyyy', 'pt_BR').format(time);
           final formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
           
           return Row(

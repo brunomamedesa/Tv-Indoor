@@ -140,14 +140,26 @@ class OptimizedWebViewController extends GetxController {
           window.performance.mark('page-loaded');
         }
         
-        // Configurar viewport para dispositivos móveis
+        // Configurar viewport para dispositivos móveis com zoom fixo de 80%
         var viewport = document.querySelector('meta[name="viewport"]');
+        var zoomValue = 0.8;
+        var maxZoom = 3.0;
+        var widthCompensation = '125%'; // 100/0.8 = 125%
+        
         if (!viewport) {
           viewport = document.createElement('meta');
           viewport.name = 'viewport';
-          viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+          viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
           document.head.appendChild(viewport);
+        } else {
+          // Atualizar viewport existente
+          viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
         }
+        
+        // Aplicar zoom via CSS Transform
+        document.body.style.transform = 'scale(' + zoomValue + ')';
+        document.body.style.transformOrigin = '0 0';
+        document.body.style.width = widthCompensation;
       ''');
       
       print('✅ Configurações pós-carregamento aplicadas');

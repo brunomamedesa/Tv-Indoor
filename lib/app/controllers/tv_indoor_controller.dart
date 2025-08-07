@@ -169,45 +169,6 @@ class TvIndoorController extends GetxController {
     }
   }
 
-  // Configurações adicionais após o carregamento da página
-  Future<void> _configurePageAfterLoad() async {
-    try {
-      // Aguardar um tempo adicional para garantir que todos os recursos carregaram
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Executar JavaScript para otimizar a página carregada
-      await webview.runJavaScript('''
-        // Aguardar o DOM estar completamente carregado
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM completamente carregado');
-          });
-        }
-        
-        // Aguardar recursos externos (imagens, scripts, etc.)
-        window.addEventListener('load', function() {
-          console.log('Todos os recursos foram carregados');
-        });
-        
-        // Forçar reflow para garantir renderização
-        document.body.offsetHeight;
-        
-        // Configurar timeouts maiores para requests
-        if (typeof jQuery !== 'undefined') {
-          jQuery.ajaxSetup({ timeout: 30000 });
-        }
-        
-        // Aguardar um pouco mais para frameworks como Qlik carregarem completamente
-        setTimeout(function() {
-          console.log('Página totalmente inicializada para BI');
-        }, 2000);
-      ''');
-      
-    } catch (e) {
-      print('Erro ao configurar página após carregamento: \$e');
-    }
-  }
-
   Future<void> reload() async {
     print('🔄 =============== INICIANDO RELOAD ===============');
     isLoading.value = true;
@@ -552,6 +513,27 @@ class TvIndoorController extends GetxController {
           await webview.runJavaScript('''
             try {
               console.log('🔧 Configurando BI/Qlik...');
+              
+              // Configurar zoom fixo de 80% para mostrar mais conteúdo na tela
+              var viewport = document.querySelector('meta[name="viewport"]');
+              var zoomValue = 0.8;
+              var maxZoom = 3.0;
+              var widthCompensation = '125%'; // 100/0.8 = 125%
+              
+              if (!viewport) {
+                viewport = document.createElement('meta');
+                viewport.name = 'viewport';
+                viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
+                document.head.appendChild(viewport);
+              } else {
+                // Atualizar viewport existente
+                viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
+              }
+              
+              // Aplicar zoom via CSS Transform para melhor visualização
+              document.body.style.transform = 'scale(' + zoomValue + ')';
+              document.body.style.transformOrigin = '0 0';
+              document.body.style.width = widthCompensation;
               
               // Remove APENAS elementos de publicidade específicos
               var adsSelectors = [
