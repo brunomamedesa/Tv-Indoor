@@ -3,6 +3,7 @@ import 'package:get/route_manager.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/splash_controller.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
+import 'package:tv_indoor/app/controllers/sefaz_controller.dart';
 import 'package:tv_indoor/app/screens/config_screen.dart';
 import 'package:tv_indoor/app/screens/splash_screen.dart';
 import 'package:tv_indoor/app/screens/tv_indoor_screen.dart';
@@ -35,6 +36,10 @@ class AppPages {
         // Inicializar ConfigController se ainda não foi inicializado
         if (!Get.isRegistered<ConfigController>()) {
           Get.put(ConfigController(), permanent: true);
+        }
+        // Inicializar SefazController se ainda não foi inicializado
+        if (!Get.isRegistered<SefazController>()) {
+          Get.put(SefazController(), permanent: true);
         }
         Get.put(TvIndoorController());
       }),

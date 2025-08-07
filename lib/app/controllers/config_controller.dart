@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_indoor/app/controllers/noticias_controller.dart';
 import 'package:tv_indoor/app/controllers/webview_controller.dart';
+import 'package:tv_indoor/app/controllers/sefaz_controller.dart';
 import 'package:tv_indoor/app/utils/globals.dart';
 import 'package:tv_indoor/app/utils/media_cache_manager.dart';
 
@@ -169,6 +170,9 @@ Future<void> fetchData() async {
       print('🥇 Salvando cotação de metais...');
       await saveCotMetais();
       
+      print('🏛️ Atualizando status SEFAZ...');
+      await atualizarStatusSefaz();
+      
       if(configurado.isTrue) {
         print('🎬 Processando mídias...');
         await handleMidias(deviceData['midias']);
@@ -206,6 +210,10 @@ Future<void> fetchData() async {
       iniciaTimer(deviceData['dispositivo']['tempo_atualizacao']);
       await saveCotacoes();
       await saveNoticias();
+      
+      // Atualizar status SEFAZ junto com as outras atualizações
+      await atualizarStatusSefaz();
+      
       if(existeMidiasDiferentes) {
         await handleMidias(deviceData['midias']);
         Get.back();
@@ -571,6 +579,25 @@ Future<void> fetchData() async {
       ),
       barrierDismissible: false,
     );
+  }
+
+  Future<void> atualizarStatusSefaz() async {
+    try {
+      // Tentar encontrar ou criar o SefazController
+      SefazController sefazController;
+      if (Get.isRegistered<SefazController>()) {
+        sefazController = Get.find<SefazController>();
+        print('✅ SefazController encontrado');
+      } else {
+        sefazController = Get.put(SefazController());
+        print('✅ SefazController criado');
+      }
+      
+      await sefazController.atualizarAgora();
+      print('✅ Status SEFAZ atualizado');
+    } catch (e) {
+      print('❌ Erro ao atualizar status SEFAZ: $e');
+    }
   }
 
 }
