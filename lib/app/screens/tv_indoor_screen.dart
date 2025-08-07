@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import 'package:tv_indoor/app/controllers/config_controller.dart';
 import 'package:tv_indoor/app/controllers/tv_indoor_controller.dart';
-import 'package:tv_indoor/app/screens/widgets/sefaz_status_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 
@@ -37,28 +36,31 @@ class TvIndoorScreen extends StatelessWidget {
                     decoration: const BoxDecoration(
                       color: Colors.black,
                     ),
-                  child: Column(
-                    children: [
-                      if (controller.isLoading.isTrue) ... [
-                        const Expanded(
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
+                  child: controller.isWebview.isTrue
+                    ? 
+                    // WebView ocupando toda a tela (sem Column que pode limitar altura)
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      height: MediaQuery.of(context).size.height,
+                      decoration: const BoxDecoration(color: Colors.black),
+                      child: WebViewWidget(
+                        controller: controller.webview,
+                      ),
+                    )
+                    :
+                    // Para outros tipos de mídia, usar Column normal
+                    Column(
+                      children: [
+                        if (controller.isLoading.isTrue) ... [
+                          const Expanded(
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
                             ),
                           ),
-                        ),
-                      ] else if (controller.isWebview.isTrue) ... [
-                        // WebView para URLs
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: WebViewWidget(
-                              controller: controller.webview,
-                            ),
-                          ),
-                        ),
-                      ] else if (controller.existeMidia.isTrue &&
+                        ] else if (controller.existeMidia.isTrue &&
                              controller.midias[controller.currentIndex.value]['tipo'] == 'video' &&
                              controller.videoReady.isTrue &&
                              controller.videoController != null &&
@@ -197,11 +199,18 @@ class TvIndoorScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ]
-                    ],
-                  )
-
-                    
+                      ] else ...[
+                        // Estado padrão quando não há mídia
+                        const Expanded(
+                          child: Center(
+                            child: Text(
+                              'Nenhuma mídia disponível',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ]), // Fim da Column para mídias não-WebView
                     
                 )),
               ),
@@ -212,15 +221,6 @@ class TvIndoorScreen extends StatelessWidget {
                   'assets/logos/logoTV01.png',
                   height: 50,
                 )
-              ),
-              // Widget SEFAZ posicionado na parte inferior esquerda
-              const Positioned(
-                left: 0,
-                bottom: 0,
-                child: SizedBox(
-                  width: 400, // Largura fixa para não ocupar toda a tela
-                  child: SefazStatusWidget(),
-                ),
               ),
             ],
           ),
