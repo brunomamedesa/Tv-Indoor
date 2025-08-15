@@ -372,27 +372,27 @@ class TvIndoorController extends GetxController {
 
     print('🎬 Reproduzindo mídia no índice: $idx de ${midias.length}');
 
-    // Limpar estado anterior para transições suaves
-    isWebview.value = false;
-    webviewLoaded.value = false;
-    
-    // Carregar página em branco para limpar WebView completamente
-    await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
-    
-    // Pequeno delay para limpar interface
-    await Future.delayed(const Duration(milliseconds: 300));
-
     // Garantimos que o indice esteja dentro dos limites
     currentIndex.value = idx % midias.length;
     final m = midias[currentIndex.value];
+    
+    // MANTER existeMidia como true durante toda a transição
     existeMidia.value = true;
 
     print('🎬 Tipo da mídia: ${m['tipo']}');
     print('🎬 URL/File: ${m['file'] ?? m['url']}');
 
+    // Definir isLoading ANTES de limpar estados para evitar flash
     isLoading.value = true;
+    
+    // Limpar estado anterior para transições suaves
+    isWebview.value = false;
+    webviewLoaded.value = false;
     videoReady.value = false;
     
+    // Carregar página em branco para limpar WebView (sem delay)
+    await webview.loadHtmlString('<html><body style="background:black;"></body></html>');
+
     // Timeout de segurança para loading infinito
     Timer(const Duration(seconds: 30), () {
       if (isLoading.value) {

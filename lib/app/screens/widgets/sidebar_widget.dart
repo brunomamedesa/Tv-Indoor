@@ -34,16 +34,28 @@ class SideBar extends StatelessWidget {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Expanded(
-                          child: Image.asset(
-                            'assets/logos/Logo Rayquimica-1.png',
-                            fit: BoxFit.cover,
+                    // Container arredondado para a logo com largura aumentada
+                    Container(
+                      width: double.infinity,
+                      height: 80, // Altura aumentada também
+                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8), // Margens menores para mais largura
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15), // Radius maior
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            offset: const Offset(0, 1),
+                            blurRadius: 3,
                           ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15), // Mesmo radius
+                        child: Image.asset(
+                          'assets/logos/Logo Rayquimica-1.png',
+                          fit: BoxFit.cover, // Mudei para cover para preencher melhor
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),

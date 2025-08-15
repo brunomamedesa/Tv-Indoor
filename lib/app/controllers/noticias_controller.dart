@@ -30,9 +30,26 @@ class NoticiasController extends GetxController{
         final encoded = prefs.getString('noticias');
         if (encoded != null) {
           news.value = jsonDecode(encoded);
-
         } else {
           news.clear();
+        }
+
+        // Adicionar notícias de teste se não houver nenhuma
+        if (news.isEmpty) {
+          news.value = [
+            {
+              'tag': 'EMPRESA',
+              'noticia': 'Rayquímica anuncia expansão de suas operações para novas regiões do país, ampliando a capacidade de atendimento aos clientes.',
+            },
+            {
+              'tag': 'MERCADO',
+              'noticia': 'Setor químico apresenta crescimento de 15% no primeiro trimestre, impulsionado pela demanda industrial.',
+            },
+            {
+              'tag': 'SUSTENTABILIDADE',
+              'noticia': 'Nova linha de produtos ecológicos será lançada em breve, reforçando o compromisso com o meio ambiente.',
+            },
+          ];
         }
 
         qtdNoticias.value = news.length;
