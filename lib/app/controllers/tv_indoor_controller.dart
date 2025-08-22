@@ -61,52 +61,64 @@ class TvIndoorController extends GetxController {
       print('ConnectivityController não encontrado: $e');
     }
     
-    // Inicializar WebView com configurações completas
+    // Inicializar WebView com configurações simples e estáveis
     webview = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      ..enableZoom(true)
-      ..setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+      ..enableZoom(false) // Desabilitar zoom para evitar problemas de rendering
+      ..setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
-            // Opcionalmente, você pode capturar o progresso do carregamento
+            print('📊 WebView loading progress: $progress%');
           },
           onPageStarted: (String url) {
-            // Página começou a carregar
+            print('🌐 WebView started loading: $url');
             webviewLoaded.value = false;
           },
           onPageFinished: (String url) {
-            // Página terminou de carregar
+            print('✅ WebView finished loading: $url');
             webviewLoaded.value = true;
+            
+            // Aguardar um pouco antes de marcar como carregado para garantir que o conteúdo seja renderizado
+            Future.delayed(const Duration(seconds: 2), () {
+              if (isWebview.value && webviewLoaded.value) {
+                isLoading.value = false;
+                print('✅ WebView completamente carregado e pronto');
+              }
+            });
           },
           onWebResourceError: (WebResourceError error) {
-            // Tratar erros de carregamento
-            print('🚨 WebView error: ${error.description}');
-            print('🚨 Error type: ${error.errorType}');
-            print('🚨 Error code: ${error.errorCode}');
-            print('🚨 Failed URL: ${error.url}');
+            print('🚨 WebView Resource Error:');
+            print('   - Description: ${error.description}');
+            print('   - Error Type: ${error.errorType}');
+            print('   - Error Code: ${error.errorCode}');
+            print('   - Failed URL: ${error.url}');
             
-            // Se for erro crítico, pular para próxima mídia
-            if (error.errorCode < 0) {
-              print('🚨 Erro crítico detectado - será pulado para próxima mídia');
-              // Não definir como carregado em caso de erro crítico
+            // Só considerar como erro crítico se for um erro de rede ou timeout
+            final isCriticalError = error.errorCode == -2 || // ERR_NAME_NOT_RESOLVED
+                                   error.errorCode == -7 ||  // ERR_TIMED_OUT
+                                   error.errorCode == -6 ||  // ERR_CONNECTION_REFUSED
+                                   error.errorCode == -105;  // ERR_NAME_NOT_RESOLVED
+            
+            if (isCriticalError) {
+              print('🚨 Erro crítico de rede detectado - pulando mídia');
               webviewLoaded.value = false;
+              isLoading.value = false;
               
               Future.delayed(const Duration(seconds: 3), () {
                 if (!_stopLoop.value && midias.isNotEmpty) {
                   final int proximo = (currentIndex.value + 1) % midias.length;
-                  print('🚨 Pulando para próxima mídia devido a erro: $proximo');
+                  print('🚨 Pulando para próxima mídia devido a erro crítico: $proximo');
                   _playMediaNoIndice(proximo);
                 }
               });
             } else {
-              // Erro menor, tentar continuar
-              webviewLoaded.value = true;
+              print('⚠️ Erro menor detectado - continuando carregamento');
             }
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Permite todas as navegações
+            print('🔀 Navigation request: ${request.url}');
             return NavigationDecision.navigate;
           },
         ),
@@ -134,54 +146,30 @@ class TvIndoorController extends GetxController {
 
   }
 
-  // Configurar WebView com suporte completo para cookies, localStorage, sessionStorage
+  // Configurar WebView com configuração minimalista e estável
   Future<void> _configureWebViewSettings() async {
     try {
-      print('🔧 Iniciando configuração do WebView...');
+      print('🔧 Configurando WebView com configuração mínima...');
       
-      // Configuração básica de cookies (apenas se disponível)
-      if (Platform.isAndroid) {
-        try {
-          final cookieManager = WebViewCookieManager();
-          await cookieManager.clearCookies();
-          print('✅ Cookies limpos com sucesso');
-        } catch (e) {
-          print('⚠️ Erro ao configurar cookies: $e');
-        }
-      }
-
-      // Injetar JavaScript básico para configurar storage
+      // Executar apenas JavaScript essencial, sem modificações agressivas
       try {
         await webview.runJavaScript('''
-          console.log("🚀 Inicializando WebView...");
+          console.log("🚀 WebView inicializado com sucesso");
           
-          // Testar localStorage básico
-          try {
-            if (typeof(Storage) !== "undefined") {
-              localStorage.setItem('test', 'ok');
-              console.log("✅ LocalStorage funcionando");
-            }
-          } catch(e) {
-            console.log("⚠️ LocalStorage não disponível:", e);
+          // Configurar apenas essenciais para funcionamento
+          if (typeof(Storage) !== "undefined") {
+            console.log("✅ Storage disponível");
           }
           
-          // Configurar cookies básicos
-          try {
-            document.cookie = "webview=active; Path=/";
-            console.log("✅ Cookies configurados");
-          } catch(e) {
-            console.log("⚠️ Erro ao configurar cookies:", e);
-          }
-          
-          console.log("✅ WebView configurado");
+          console.log("✅ WebView configurado minimamente");
         ''');
-        print('✅ JavaScript executado com sucesso');
+        print('✅ JavaScript básico executado');
       } catch (e) {
-        print('⚠️ Erro ao executar JavaScript: $e');
+        print('⚠️ JavaScript não executado (normal para algumas páginas): $e');
       }
       
     } catch (e) {
-      print('❌ Erro ao configurar WebView: $e');
+      print('❌ Erro na configuração básica do WebView: $e');
     }
   }
 
@@ -537,137 +525,79 @@ class TvIndoorController extends GetxController {
         // APENAS agora definir isWebview como true, após ter uma URL válida
         isWebview.value = true;
         currentWebviewUrl.value = urlToLoad;
-        print('🌐 Carregando URL BI/Qlik: $urlToLoad');
+        print('🌐 Carregando URL: $urlToLoad');
         
         try {
-          isLoading.value = true;
-          
-          // Carregamento DIRETO para BI - sem cache que interfere
+          // Primeiro, carregar a URL de forma simples
           await webview.loadRequest(
             Uri.parse(urlToLoad),
-            headers: {
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-              'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-              'Accept-Encoding': 'gzip, deflate, br',
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-              'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            },
-          ).timeout(const Duration(seconds: 45));
+          ).timeout(const Duration(seconds: 20)); // Timeout reduzido para 20 segundos
           
-          print('✅ URL carregada diretamente');
+          print('✅ URL carregada com sucesso');
           
-          // Aguardar mais tempo para BI carregar completamente
-          await Future.delayed(const Duration(seconds: 5));
+          // Aguardar um tempo adequado para o conteúdo carregar
+          await Future.delayed(const Duration(seconds: 3));
           
-          // APENAS otimizações que NÃO quebram BI
+          // Aplicar apenas otimizações mínimas que NÃO quebram funcionalidades
           await webview.runJavaScript('''
             try {
-              console.log('🔧 Configurando BI/Qlik...');
+              console.log('🔧 Aplicando otimizações mínimas...');
               
-              // Configurar zoom otimizado de 85% para mostrar mais conteúdo na tela
-              var viewport = document.querySelector('meta[name="viewport"]');
-              var zoomValue = 0.85;
-              var maxZoom = 3.0;
-              var widthCompensation = '118%'; // 100/0.85 = 118%
-              
-              if (!viewport) {
-                viewport = document.createElement('meta');
-                viewport.name = 'viewport';
-                viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
-                document.head.appendChild(viewport);
-              } else {
-                // Atualizar viewport existente
-                viewport.content = 'width=device-width, initial-scale=' + zoomValue + ', maximum-scale=' + maxZoom + ', user-scalable=yes';
+              // Apenas configurar zoom se necessário
+              try {
+                var viewport = document.querySelector('meta[name="viewport"]');
+                if (!viewport) {
+                  viewport = document.createElement('meta');
+                  viewport.name = 'viewport';
+                  viewport.content = 'width=device-width, initial-scale=0.9, user-scalable=yes';
+                  if (document.head) {
+                    document.head.appendChild(viewport);
+                  }
+                }
+              } catch(e) {
+                console.log('Viewport não pôde ser configurado:', e);
               }
               
-              // Aplicar zoom via CSS Transform otimizado para dashboards verticais
-              document.body.style.transform = 'scale(' + zoomValue + ')';
-              document.body.style.transformOrigin = '0 0';
-              document.body.style.width = widthCompensation;
-              
-              // Otimizações para melhor uso do espaço vertical
-              document.body.style.minHeight = '100vh';
-              document.documentElement.style.height = '100%';
-              document.body.style.margin = '0';
-              document.body.style.padding = '0';
-              
-              // Esconder barras superiores desnecessárias do Qlik/BI
-              setTimeout(function() {
-                // Selecionar elementos comuns de header/toolbar do Qlik
-                var headersToHide = [
-                  '.qv-panel-sheet',
-                  '.qvt-sheet-title-container',
-                  '.qv-object-title', 
-                  '[data-role="navigation"]',
-                  '.qv-panel-navigation',
-                  'div[class*="header"]:first-child',
-                  'div[class*="toolbar"]:first-child',
-                  'div[id*="header"]:first-child',
-                  '.ng-scope:first-child > div:first-child'
+              // Remover apenas elementos de publicidade óbvios (sem quebrar BI)
+              try {
+                var adsSelectors = [
+                  'iframe[src*="doubleclick"]',
+                  'iframe[src*="googlesyndication"]', 
+                  'div[class*="advertisement"]',
+                  'div[id*="google_ads"]'
                 ];
                 
-                headersToHide.forEach(function(selector) {
-                  try {
-                    var elements = document.querySelectorAll(selector);
-                    elements.forEach(function(el, index) {
-                      // Apenas esconder elementos que estão no topo da página
-                      if (el.offsetTop < 120) {
-                        el.style.display = 'none';
-                      }
-                    });
-                  } catch(e) { /* ignore */ }
-                });
-                
-                // Ajustar containers principais
-                var containers = document.querySelectorAll('div[class*="container"], main, .content, .qv-panel-content');
-                containers.forEach(function(container) {
-                  container.style.paddingTop = '0px';
-                  container.style.marginTop = '-30px';
-                });
-                
-              }, 3000);
-              
-              // Remove APENAS elementos de publicidade específicos
-              var adsSelectors = [
-                'iframe[src*="doubleclick"]',
-                'iframe[src*="googlesyndication"]', 
-                'div[class*="advertisement"]',
-                'div[id*="google_ads"]',
-                '.ads',
-                '[class*="ad-banner"]'
-              ];
-              
-              adsSelectors.forEach(function(selector) {
-                try {
+                adsSelectors.forEach(function(selector) {
                   var elements = document.querySelectorAll(selector);
                   elements.forEach(function(el) { 
-                    el.style.display = 'none'; 
+                    if (el) el.style.display = 'none'; 
                   });
-                } catch(e) { /* ignore */ }
-              });
+                });
+              } catch(e) {
+                console.log('Ads não puderam ser removidos:', e);
+              }
               
-              // NÃO remove scripts (BI precisa)
-              // NÃO desabilita pointer-events (BI precisa de interação)
-              // NÃO remove event listeners (BI precisa de eventos)
-              
-              console.log('✅ BI/Qlik configurado sem quebrar funcionalidade');
+              console.log('✅ Otimizações aplicadas com sucesso');
             } catch(e) {
-              console.log('⚠️ Erro na configuração (ignorado): ', e);
+              console.log('⚠️ Erro nas otimizações (ignorado):', e);
             }
-          ''');
+          ''').catchError((error) {
+            print('⚠️ JavaScript de otimização falhou (ignorado): $error');
+          });
           
-          webviewLoaded.value = true;
-          isLoading.value = false;
+          // Marcar como carregado apenas após todas as operações
+          if (!webviewLoaded.value) {
+            webviewLoaded.value = true;
+            isLoading.value = false;
+          }
           
         } catch (e) {
-          print('❌ Erro ao carregar BI: $e');
+          print('❌ Erro ao carregar URL: $e');
           webviewLoaded.value = false;
           isLoading.value = false;
           
-          // Em caso de erro, pular para próxima mídia após delay curto
-          await Future.delayed(const Duration(seconds: 5));
+          // Em caso de erro, aguardar um pouco e pular para próxima mídia
+          await Future.delayed(const Duration(seconds: 3));
           
           if (!_stopLoop.value) {
             final int proximo = (currentIndex.value + 1) % midias.length;
